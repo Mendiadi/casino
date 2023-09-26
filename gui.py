@@ -1,0 +1,112 @@
+import pygame
+import sys
+
+# Initialize Pygame
+pygame.init()
+
+# Constants
+WIDTH, HEIGHT = 800, 600
+BACKGROUND_COLOR = (0, 128, 0)
+TEXT_COLOR = (255, 255, 255)
+BUTTON_COLOR = (255, 0, 0)
+SLIDER_COLOR = (0, 0, 255)
+
+# Create the screen
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("CASINO")
+
+# Define fonts
+font = pygame.font.Font(None, 36)
+
+# Player profile content
+current_player_profile = "Player: John Doe\nBalance: $1000"
+
+# Create the "Start Game" button rect
+start_button = pygame.Rect(300, 250, 200, 50)
+
+# Flag to control the second window
+show_second_window = False
+
+# Flag to control slider interaction
+slider_dragging = False
+
+# Slider properties
+slider_min = 0
+slider_max = 100
+slider_value = slider_min
+
+def draw_home_screen():
+    screen.fill(BACKGROUND_COLOR)
+
+    # Draw player profile label
+    profile_label = font.render(current_player_profile, True, TEXT_COLOR)
+    screen.blit(profile_label, (20, 20))
+
+    # Draw the "Start Game" button
+    pygame.draw.rect(screen, BUTTON_COLOR, start_button)
+    start_text = font.render("Start Game", True, TEXT_COLOR)
+    screen.blit(start_text, (350, 260))
+
+    pygame.display.flip()
+
+# Function to draw the second window
+def draw_second_window():
+    screen.fill(BACKGROUND_COLOR)
+
+    # Draw header
+    header_text = font.render("Choose", True, TEXT_COLOR)
+    screen.blit(header_text, (350, 20))
+
+    # Draw three buttons
+    button_width = 150
+    button_height = 50
+    button_spacing = 20
+    for i in range(3):
+        button_rect = pygame.Rect(100 + i * (button_width + button_spacing), 150, button_width, button_height)
+        pygame.draw.rect(screen, BUTTON_COLOR, button_rect)
+        button_text = font.render(f"Button {i+1}", True, TEXT_COLOR)
+        screen.blit(button_text, (button_rect.centerx - button_text.get_width() // 2, 160))
+
+    # Draw the slider bounds line
+    pygame.draw.line(screen, SLIDER_COLOR, (350, 530), (450, 530), 5)
+
+    # Draw the slider button
+    slider_button = pygame.Rect(350 + (slider_value / slider_max) * 100, 500, 30, 30)
+    pygame.draw.rect(screen, BUTTON_COLOR, slider_button)
+
+    pygame.display.flip()
+
+# Main game loop
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if start_button.collidepoint(event.pos):
+                # Toggle the second window
+                show_second_window = not show_second_window
+            elif show_second_window:
+                for i in range(3):
+                    button_rect = pygame.Rect(100 + i * (150 + 20), 150, 150, 50)
+                    if button_rect.collidepoint(event.pos):
+                        print(f"Button {i+1} clicked!")
+
+                # Check for slider interaction
+                if 350 <= event.pos[0] <= 450 and 500 <= event.pos[1] <= 530:
+                    slider_dragging = True
+        if event.type == pygame.MOUSEBUTTONUP:
+            slider_dragging = False
+        if event.type == pygame.MOUSEMOTION and slider_dragging:
+            x, _ = event.pos
+            x = max(350, min(x, 450))  # Constrain slider within bounds
+            slider_value = int(((x - 350) / 100) * (slider_max - slider_min) + slider_min)
+
+    if show_second_window:
+        draw_second_window()
+    else:
+        draw_home_screen()
+
+# Quit Pygame
+pygame.quit()
+sys.exit()
