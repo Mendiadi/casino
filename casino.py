@@ -68,7 +68,9 @@ class Casino:
     @staticmethod
     def process_game(match:Match):
         if match.results:
-            return flask.jsonify(match.results),200
+            temp = match.results.copy()
+            game_ids.pop(match.games.popitem()[1]["p1"]+match.games.popitem()[1]["p1"])
+            return flask.jsonify(temp),200
         teamscpy = match.teams.copy()
         r = requests.get("http://127.0.0.1:8080/match", params={"team_a":teamscpy.popitem()[1]
                                                                 ,"team_b":teamscpy.popitem()[1]})
@@ -83,10 +85,14 @@ class Casino:
 
 @app.post("/game")
 def start_game():
+    team = flask.request.json.get("team", None)
+    user = flask.request.json.get("user_id", None)
+    r = requests.get("http://127.0.0.1:5555/balance", params={"user_id": user})
+    if not r.ok:
+        return r.text, r.status_code
     if len(game_ids) == 0:
         return "no games ready", 400
-    team = flask.request.json.get("team",None)
-    user = flask.request.json.get("user_id",None)
+
     if not user:
         return "bad request",400
     if not team:
