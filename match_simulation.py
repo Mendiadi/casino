@@ -16,12 +16,12 @@ POSITION_ENERGY_REDUCTION = {"Forward": 0.2, "Midfielder": 0.15, "Defender": 0.1
 
 
 class SoccerEnv(gym.Env):
-    def __init__(self,team_a,team_b):
+    def __init__(self, team_a, team_b):
         super(SoccerEnv, self).__init__()
         self.team_a_name = team_a
         self.team_b_name = team_b
-        self.team_a = self._init_team(team_a,(60,90))
-        self.team_b = self._init_team(team_b,(60,90))
+        self.team_a = self._init_team(team_a, (60, 90))
+        self.team_b = self._init_team(team_b, (60, 90))
         self.current_minute = 0
         self.team_switch_momentum = 0.5  # Initial momentum value
         self.yellow_cards = {}
@@ -50,7 +50,7 @@ class SoccerEnv(gym.Env):
 
         return switch_probability
 
-    def _init_team(self, name,rate):
+    def _init_team(self, name, rate):
         team = []
         for i in range(NUM_PLAYERS_PER_TEAM):
             player = {
@@ -72,15 +72,14 @@ class SoccerEnv(gym.Env):
         return (ASSIST_PROBABILITY * player["rating"] / 100) * (player["energy"] / PLAYER_ENERGY_MAX)
 
     def _print_match_info(self, minute, team_with_ball, leading_team):
-        self.time_line.update({minute:f"{team_with_ball} has the ball, {leading_team} leading"})
-
+        self.time_line.update({minute: f"{team_with_ball} has the ball, {leading_team} leading"})
 
     def _take_action(self, team, minute):
         player_with_ball = random.choice(team)
         return player_with_ball
 
     def step(self, action):
-        team_with_ball = random.choice((self.team_a_name,self.team_b_name))
+        team_with_ball = random.choice((self.team_a_name, self.team_b_name))
         if self.current_minute >= MATCH_DURATION:
             team_a_goals = sum(player["goals_scored"] for player in self.team_a)
             team_b_goals = sum(player["goals_scored"] for player in self.team_b)
@@ -136,41 +135,46 @@ class SoccerEnv(gym.Env):
             if random.random() < self._calculate_assist_probability(player_with_ball):
                 assisting_player = random.choice(scoring_team)
                 if assisting_player["name"] in self.assists:
-                    self.assists[assisting_player["name"]] +=1
+                    self.assists[assisting_player["name"]] += 1
                 else:
                     self.assists[assisting_player["name"]] = 1
-                self.time_line.update({f"{self.current_minute:02d}:45":f"{scorer['name']} scores a goal, assisted by {assisting_player['name']} for {team_with_ball}"})
+                self.time_line.update({
+                                          f"{self.current_minute:02d}:45": f"{scorer['name']} scores a goal, assisted by {assisting_player['name']} for {team_with_ball}"})
                 # print(
                 #     f"minute {self.current_minute:02d}:45: {scorer['name']} scores a goal, assisted by {assisting_player['name']} for {team_with_ball}")
             else:
-                self.time_line.update({f" {self.current_minute:02d}:45":f"{scorer['name']} scores a goal for {team_with_ball}"})
+                self.time_line.update(
+                    {f" {self.current_minute:02d}:45": f"{scorer['name']} scores a goal for {team_with_ball}"})
                 # print(f"minute {self.current_minute:02d}:45: {scorer['name']} scores a goal for {team_with_ball}")
         elif random.random() < YELLOW_CARD_PROBABILITY:
             player = player_with_ball
             if player["name"] in self.yellow_cards:
                 self.yellow_cards[player["name"]] += 1
                 if self.yellow_cards[player["name"]] == MAX_YELLOW_CARDS:
-                    self.time_line.update({f"{self.current_minute:02d}:30":f"{player['name']} receives a red card and is sent off for {team_with_ball}"})
+                    self.time_line.update({
+                                              f"{self.current_minute:02d}:30": f"{player['name']} receives a red card and is sent off for {team_with_ball}"})
                     # print(
-                        # f"minute {self.current_minute:02d}:30: {player['name']} receives a red card and is sent off for {team_with_ball}")
+                    # f"minute {self.current_minute:02d}:30: {player['name']} receives a red card and is sent off for {team_with_ball}")
                     self.yellow_cards.pop(player["name"])  # Remove the player from the yellow card list
                     team_with_card = self.team_a if team_with_ball == f"{self.team_a_name}" else self.team_b
                     team_with_card.remove(player)
                 else:
                     self.time_line.update({
-                                              f"{self.current_minute:02d}:30": f"{player['name']} receives a yellow card for {team_with_ball}"})
+                        f"{self.current_minute:02d}:30": f"{player['name']} receives a yellow card for {team_with_ball}"})
                     # print(
                     #     f"minute {self.current_minute:02d}:30: {player['name']} receives a yellow card for {team_with_ball}")
             else:
                 self.yellow_cards[player["name"]] = 1
-                self.time_line.update({f"{self.current_minute:02d}:30":f"{player['name']} receives a yellow card for {team_with_ball}"})
+                self.time_line.update(
+                    {f"{self.current_minute:02d}:30": f"{player['name']} receives a yellow card for {team_with_ball}"})
                 # print(
                 #     f"minute {self.current_minute:02d}:30: {player['name']} receives a yellow card for {team_with_ball}")
 
         elif random.random() < RED_CARD_PROBABILITY:
             team_with_card = self.team_a if team_with_ball == f"{self.team_a_name}" else self.team_b
             player_with_card = random.choice(team_with_card)
-            self.time_line.update({f"{self.current_minute:02d}:30":f"{player_with_card['name']} receives a red card and is sent off for {team_with_ball}"})
+            self.time_line.update({
+                                      f"{self.current_minute:02d}:30": f"{player_with_card['name']} receives a red card and is sent off for {team_with_ball}"})
             # print(
             #     f"minute {self.current_minute:02d}:30: {player_with_card['name']} receives a red card and is sent off for {team_with_ball}")
             team_with_card.remove(player_with_card)
@@ -181,15 +185,17 @@ class SoccerEnv(gym.Env):
 
 
         else:
-            player_with_ball = self._take_action(self.team_a if team_with_ball == f"{self.team_a_name}" else self.team_b,
-                                                 self.current_minute)
-            self.time_line.update({f"{self.current_minute:02d}:30":f"{player_with_ball['name']} has the ball, {leading_team} leading"})
+            player_with_ball = self._take_action(
+                self.team_a if team_with_ball == f"{self.team_a_name}" else self.team_b,
+                self.current_minute)
+            self.time_line.update(
+                {f"{self.current_minute:02d}:30": f"{player_with_ball['name']} has the ball, {leading_team} leading"})
             print(
                 f"minute {self.current_minute:02d}:30: {player_with_ball['name']} has the ball, {leading_team} leading")
 
         self.current_minute += 1
 
-        return False, {"status":f"processing {self.current_minute}"}
+        return False, {"status": f"processing {self.current_minute}"}
 
     def reset(self):
         # self.team_a = self._init_team("Team A")
@@ -204,21 +210,24 @@ class SoccerEnv(gym.Env):
         pass
 
 
-def run_simulation(team_a,team_b):
+def run_simulation(team_a, team_b):
     env = SoccerEnv(team_a, team_b)
     done = False
     while not done:
         done, status = env.step(None)
-    return {"status":status["status"],"teams_after":(env.team_a,env.team_b),"assists":env.assists,
-            "red_cards":env.red_cards,"yellow_cards":env.yellow_cards,"goals":env.goals,
+    return {"status": status["status"], "teams_after": (env.team_a, env.team_b), "assists": env.assists,
+            "red_cards": env.red_cards,
+            "yellow_cards": env.yellow_cards, "goals": env.goals,"timeline":env.time_line
             }
+
 
 app = flask.Flask("match_simulation")
 
+
 @app.get("/match")
 def get_match():
-    team_a = flask.request.args.get("team_a",None)
-    team_b = flask.request.args.get("team_b",None)
+    team_a = flask.request.args.get("team_a", None)
+    team_b = flask.request.args.get("team_b", None)
     if not team_b or not team_a:
         return "No enough teams", 400
     try:
@@ -230,8 +239,7 @@ def get_match():
 
 
 if __name__ == '__main__':
-
-    app.run(debug=True,port=8080)
+    app.run(debug=True, port=8080)
 
 # Main
 # if __name__ == "__main__":

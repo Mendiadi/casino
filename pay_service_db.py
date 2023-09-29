@@ -7,7 +7,7 @@ app = flask.Flask("pay_db")
 # db model class
 class Account:
     # define columns in constructor
-    def __init__(self, user_id, balance, history=None):
+    def __init__(self, user_id, balance=5000, history=None):
         self.user_id = user_id
         self.balance = balance
         self.history = history
@@ -78,7 +78,7 @@ def get_account():
     if not acc:
         return "Bad Request", 400
     user = get_by_id(Account(0, 0, 0), acc)
-    print(user.__dict__)
+
     if not user:
         return "User Not Found", 404
     return flask.jsonify(user.__dict__), 200
