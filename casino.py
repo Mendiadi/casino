@@ -48,7 +48,7 @@ def tracker():
     while service_run:
         players = get_two_players()
         if players:
-            game_ids["".join(players)] = Match(len(active_games))
+            game_ids["".join(players)] = Match("".join(players))
         time.sleep(0.5)
 
 
@@ -66,10 +66,11 @@ class Casino:
         return r.text, r.status_code
 
     @staticmethod
-    def process_game(match:Match):
+    def process_game(match:Match,metadata):
         if match.results:
             temp = match.results.copy()
-            game_ids.pop(match.games.popitem()[1]["p1"]+match.games.popitem()[1]["p1"])
+            game_ids.pop(match.match_id)
+            del match
             return flask.jsonify(temp),200
         teamscpy = match.teams.copy()
         r = requests.get("http://127.0.0.1:8080/match", params={"team_a":teamscpy.popitem()[1]
@@ -78,6 +79,32 @@ class Casino:
         if not r.ok:
             return r.text, r.status_code
         match.results = r.json()
+        metadata_bonus = {}
+        for key,data in metadata.items():
+            if data:
+                metadata_bonus[key] = len(match.results[key]) == data
+        match.results["metadata_bonus"] = metadata_bonus
+        won_team = match.results["status"].replace(" win")
+        for u,team in match.teams.items():
+            if team != won_team:
+                lost_team = team
+                lost_user = u
+            else:
+                won_user = u
+        lost_cash = 500
+        won_cash = lost_cash*2
+        for bonus,val in metadata_bonus.items():
+            if val:
+                won_cash += 50
+        r = requests.put("http://127.0.0.1:5555/withdraw", params={"user_id":lost_user,"cash":
+                                            lost_cash})
+        if not r.ok:
+            return r.text,r.status_code
+        r = requests.put("http://127.0.0.1:5555/deposit", params={"user_id": won_user, "cash":
+            won_cash})
+        if not r.ok:
+            return r.text, r.status_code
+
         return flask.jsonify(match.results),200
 
         # calculate winner do update balances
@@ -85,8 +112,18 @@ class Casino:
 
 @app.post("/game")
 def start_game():
+    metadata_schema = {"goals":None,
+                      "assists":None,
+                      "red cards":None,
+                      "yellow cards":None}
     team = flask.request.json.get("team", None)
     user = flask.request.json.get("user_id", None)
+    metadata = flask.request.json.get("metadata",metadata_schema)
+    if metadata.keys() != metadata_schema.keys():
+        return "Bad metadata schema",400
+    for data in metadata.values():
+        if type(data) != int and data is not None:
+            return f"Bad metadata type {type(data)}"
     r = requests.get("http://127.0.0.1:5555/balance", params={"user_id": user})
     if not r.ok:
         return r.text, r.status_code
@@ -100,7 +137,7 @@ def start_game():
     for g in game_ids:
         if user in g:
             if len(game_ids[g].teams) == 2:
-                return Casino.process_game(game_ids[g])
+                return Casino.process_game(game_ids[g],metadata)
             if user not in game_ids[g].teams:
                 game_ids[g].teams[user] = team
     # game logic

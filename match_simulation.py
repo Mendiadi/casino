@@ -190,8 +190,8 @@ class SoccerEnv(gym.Env):
                 self.current_minute)
             self.time_line.update(
                 {f"{self.current_minute:02d}:30": f"{player_with_ball['name']} has the ball, {leading_team} leading"})
-            print(
-                f"minute {self.current_minute:02d}:30: {player_with_ball['name']} has the ball, {leading_team} leading")
+            # print(
+                # f"minute {self.current_minute:02d}:30: {player_with_ball['name']} has the ball, {leading_team} leading")
 
         self.current_minute += 1
 

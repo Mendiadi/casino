@@ -75,7 +75,7 @@ while running:
                     print(r, r.text)
                     if r:
                         pygame.quit()
-                        threading.Thread(target=gui_.run).start()
+                        threading.Thread(target=gui_.run,args=(USER_ID,)).start()
 
                         running = False
                         break

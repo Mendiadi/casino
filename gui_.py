@@ -1,13 +1,26 @@
+import threading
+import time
+
 import pygame
 import sys
 
+import requests
 
-def run():
+
+
+def run(user_id):
+    def update_user_data():
+        time.sleep(15)
+        global BALANCE_VALUE
+        BALANCE_VALUE= int(requests.get("http://127.0.0.1:5555/balance",
+                                                params={"user_id": user_id}).text)
+
     # internal data
     AMOUNT_OF_POT = 0
 
     # external data
-    BALANCE_VALUE = 1000
+    BALANCE_VALUE = int(requests.get("http://127.0.0.1:5555/balance",
+                                     params={"user_id": user_id}).text)
 
     # Constants
     WIDTH, HEIGHT = 800, 600
@@ -26,7 +39,7 @@ def run():
     font = pygame.font.Font(None, 36)
 
     # Player profile content
-    current_player_profile = f"Player: John Doe\nBalance: ${BALANCE_VALUE}"
+    current_player_profile = f"Welcome Back: {user_id}{' '*15}Your Balance: ${BALANCE_VALUE}"
 
     # Create the "Start Game" button rect
     start_button = pygame.Rect(300, 250, 200, 50)
@@ -36,6 +49,8 @@ def run():
 
     # Flag to control the bonus window
     show_bonus_window = False
+
+
 
     # Flag to control slider interaction
     slider_dragging = False
@@ -48,6 +63,52 @@ def run():
     # Bonus window entries and values
     bonus_entries = [0, 0, 0, 0]
     bonus_entry_rects = []
+    start_bonus_button = pygame.Rect(350 - 75, 400, 150, 50)
+    class Adapter:
+        def __init__(self):
+            self.is_waiting_for_start_game = None
+            self.is_searching = False
+            self.game = None
+            self.match = None
+
+        def get_game(self,online=True):
+            if not self.is_searching:
+                r = requests.get("http://127.0.0.1:5050/game",
+                                 params={"p1": user_id, "action": 2, "bet": 2,
+                                         "cash_pot": 500, "p2": online})
+                if r.ok:
+                    self.is_searching = True
+                    res = "OK"
+                    while res.lower() == "ok":
+                        time.sleep(0.5)
+                        r = requests.get("http://127.0.0.1:5050/game",
+                                         params={"p1": user_id, "action": 2, "bet": 2,
+                                                 "cash_pot": 500, "p2": online})
+                        print(r,r.text)
+                        if r.ok:
+
+                            res = r.text
+                    self.is_searching = False
+                    self.game = res
+
+        def start_game(self):
+            if not self.is_waiting_for_start_game:
+                r = requests.post("http://127.0.0.1:5050/game",
+                                  json={"user_id": user_id, "team": user_id})
+                if r.ok:
+                    self.is_waiting_for_start_game = True
+                    res = "OK"
+                    while res.lower() == "ok":
+                        time.sleep(0.5)
+                        r = requests.post("http://127.0.0.1:5050/game",
+                                          json={"user_id": user_id, "team": user_id})
+                        print(r, r.text)
+                        if r.ok:
+                            res = r.text
+                    self.is_waiting_for_start_game = False
+                    self.match = res
+
+    adapter = Adapter()
 
     def draw_home_screen():
         screen.fill(BACKGROUND_COLOR)
@@ -79,10 +140,10 @@ def run():
         button_width = 150
         button_height = 50
         button_spacing = 20
-        for i in range(3):
+        for i in range(1):
             button_rect = pygame.Rect(100 + i * (button_width + button_spacing), 150, button_width, button_height)
             pygame.draw.rect(screen, BUTTON_COLOR, button_rect)
-            button_text = font.render(f"Button {i + 1}", True, TEXT_COLOR)
+            button_text = font.render(f"Play Online {i + 1}", True, TEXT_COLOR)
             screen.blit(button_text, (button_rect.centerx - button_text.get_width() // 2, 160))
 
         # Draw the slider bounds line
@@ -122,7 +183,7 @@ def run():
             screen.blit(entry_input_text, (entry_rect.x + 10, entry_rect.centery - entry_input_text.get_height() // 2))
 
         # Draw the "Start" button
-        start_bonus_button = pygame.Rect(350 - 75, 400, 150, 50)
+
         pygame.draw.rect(screen, BUTTON_COLOR, start_bonus_button)
         start_bonus_text = font.render("Start", True, TEXT_COLOR)
         screen.blit(start_bonus_text, (350 - start_bonus_text.get_width() // 2, 410))
@@ -140,13 +201,19 @@ def run():
                     # Toggle the second window
                     show_second_window = not show_second_window
                 elif show_second_window:
-                    for i in range(3):
+                    for i in range(1):
                         button_rect = pygame.Rect(100 + i * (150 + 20), 150, 150, 50)
                         if button_rect.collidepoint(event.pos):
                             # Show the bonus window when clicking a button
+                            if not adapter.is_searching:
+                                threading.Thread(target=adapter.get_game,daemon=True).start()
                             show_bonus_window = True
                             break
                     if show_bonus_window:
+                        if start_bonus_button.collidepoint(event.pos):
+                            if not adapter.is_waiting_for_start_game:
+                                threading.Thread(target=adapter.start_game,daemon=True).start()
+                                threading.Thread(target=update_user_data(),daemon=True).start()
                         for i, entry_rect in enumerate(bonus_entry_rects):
                             if entry_rect.collidepoint(event.pos):
                                 # Activate the clicked bonus entry for editing

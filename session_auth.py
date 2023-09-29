@@ -85,7 +85,7 @@ def login():
 @app.put("/logout")
 def logout():
     user = flask.request.json
-    s = sessions.get(user, None)
+    s = sessions.get(user["user_id"], None)
     if not s:
         return "user not login", 400
     s.close()
