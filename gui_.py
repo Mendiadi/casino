@@ -1,6 +1,6 @@
 import threading
 import time
-
+import routes
 import pygame
 import sys
 
@@ -25,13 +25,13 @@ def run(user_id):
     def update_user_data():
         time.sleep(5)
         global BALANCE_VALUE
-        BALANCE_VALUE = int(requests.get("http://127.0.0.1:5555/balance",
+        BALANCE_VALUE = int(requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_pay_port}/{routes.Routes.service_pay_balance}",
                                          params={"user_id": user_id}).text)
 
     # internal data
 
     # external data
-    BALANCE_VALUE = int(requests.get("http://127.0.0.1:5555/balance",
+    BALANCE_VALUE = int(requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_pay_port}/{routes.Routes.service_pay_balance}",
                                      params={"user_id": user_id}).text)
     pygame.init()
     # Constants
@@ -86,7 +86,7 @@ def run(user_id):
 
         def get_game(self, online=True):
             if not self.is_searching:
-                r = requests.get("http://127.0.0.1:5050/game",
+                r = requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_casino_port}/{routes.Routes.service_casino_game}",
                                  params={"p1": user_id, "action": 2, "bet": 2,
                                          "cash_pot": 500, "p2": online})
                 if r.ok:
@@ -98,7 +98,7 @@ def run(user_id):
 
                         time.sleep(0.5)
 
-                        r = requests.get("http://127.0.0.1:5050/game",
+                        r = requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_casino_port}/{routes.Routes.service_casino_game}",
                                          params={"p1": user_id, "action": 2, "bet": 2,
                                                  "cash_pot": 500, "p2": online})
                         print(r, r.text)
@@ -112,7 +112,7 @@ def run(user_id):
         def start_game(self):
             if not self.is_waiting_for_start_game:
                 print("inside adapter")
-                r = requests.post("http://127.0.0.1:5050/game",
+                r = requests.post(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_casino_port}/{routes.Routes.service_casino_game}",
                                   json={"user_id": user_id, "team": user_id})
                 Handler.trigger_loading = True
 
@@ -122,7 +122,7 @@ def run(user_id):
                     while res.lower() == "ok":
                         print("adapter loop")
                         time.sleep(0.5)
-                        r = requests.post("http://127.0.0.1:5050/game",
+                        r = requests.post(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_casino_port}/{routes.Routes.service_casino_game}",
                                           json={"user_id": user_id, "team": user_id})
                         print(r, r.text)
                         if r.ok:
@@ -329,7 +329,7 @@ def run(user_id):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-                r = requests.put("http://127.0.0.1:9090/logout", json={"user_id": user_id})
+                r = requests.put(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_session_auth_port}/{routes.Routes.service_session_auth_logout}", json={"user_id": user_id})
                 print(r, r.text)
                 break
             Handler.current_event_handler(event)

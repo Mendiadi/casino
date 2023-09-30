@@ -2,7 +2,7 @@ import threading
 
 import pygame
 import sys
-
+import routes
 import requests
 
 import gui_
@@ -64,7 +64,7 @@ while running:
                     print("Register button clicked")
                     def register():
 
-                        r = requests.post("http://127.0.0.1:9090/register", json={"user_id": USER_ID})
+                        r = requests.post(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_session_auth_port}/{routes.Routes.service_session_auth_register}", json={"user_id": USER_ID})
                         print(r, r.text)
                         if r.ok:
                             print("register sucess")
@@ -74,7 +74,7 @@ while running:
                 elif 220 <= event.pos[1] <= 260:
                     # Add code to handle login button click and redirection here
                     print("User ID:", USER_ID)
-                    r = requests.post("http://127.0.0.1:9090/login", json={"user_id": USER_ID})
+                    r = requests.post(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_session_auth_port}/{routes.Routes.service_session_auth_login}", json={"user_id": USER_ID})
                     print(r, r.text)
                     if r:
                         pygame.quit()

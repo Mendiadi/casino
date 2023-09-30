@@ -1,7 +1,7 @@
 import pygame
 import sys
 import time
-
+import routes
 import requests
 
 # Initialize Pygame
@@ -19,7 +19,7 @@ display_interval = 0.5  # in seconds
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Text Queue Window")
 font = pygame.font.Font(None, FONT_SIZE)
-time_line = requests.get("http://127.0.0.1:8080/match", params={"team_a":"s2"
+time_line = requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_simulator_port}/{routes.Routes.service_simulator_match}", params={"team_a":"s2"
                              ,"team_b":"s"}).json().get("timeline")
 
 text_list = [f"{key.replace(' ','')}: {val}" for key , val in sorted(time_line.items())]
