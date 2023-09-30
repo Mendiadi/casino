@@ -32,11 +32,28 @@ text_list = text_list_ordered
 # List to hold the displayed texts
 displayed_texts = []
 # Function to draw text at left top
-def draw_text_left_top(text, color):
-    text_surface = font.render(text, True, color)
+
+def draw_text(offset_y,offset_x,text,color):
+    text_surface = font.render(text, False, color)
     text_rect = text_surface.get_rect()
-    text_rect.topleft = (10, 10)  # Position at the left top corner
+    text_rect.topleft = (offset_x, offset_y)  # Position at the left top corner
     screen.blit(text_surface, text_rect)
+
+def format_match_data():
+    # {"teamname":{goals:0,assists:0,"yellow":0,red:0}}
+    ...
+
+def draw_texts(color,data=None):
+    draw_text(5,10,"TEAM: ",color)
+    draw_text(35,10, "Goals: ", color)
+    draw_text(75,10, "Assists: ", color)
+    draw_text(105,10, "Yellow Cards: ", color)
+    draw_text(135,10, "Red Cards: ", color)
+    draw_text(5,580,"TEAM: ",color)
+    draw_text(35,580, "Goals: ", color)
+    draw_text(75,580, "Assists: ", color)
+    draw_text(105,580, "Yellow Cards: ", color)
+    draw_text(135,580, "Red Cards: ", color)
 # Function to display texts
 
 def display_texts(texts):
@@ -47,9 +64,17 @@ def display_texts(texts):
         if "goal" in text:
             display_interval = 2
             text_surface = font.render(text, True, TEXT_COLOR2)
+        elif "yellow" in text:
+            display_interval = 1
+            text_surface = font.render(text, True, (255,255,0))
+        elif "red" in text:
+            display_interval = 1
+            text_surface = font.render(text, True,  (255, 0, 0))
+
         else:
             display_interval = 0.3
             text_surface = font.render(text, True, TEXT_COLOR)
+
         text_rect = text_surface.get_rect()
         text_rect.center = (WINDOW_WIDTH // 2, 50 + i * 50)
         screen.blit(text_surface, text_rect)
@@ -88,7 +113,7 @@ while running and current_time - start_time < total_duration:
 
         display_texts(displayed_texts)
         start_time = current_time
-    draw_text_left_top("GOALS: ",TEXT_COLOR)
+    draw_texts(TEXT_COLOR)
     pygame.display.flip()
     current_time = time.time()
 
