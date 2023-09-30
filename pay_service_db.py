@@ -40,6 +40,7 @@ def update(model):
     with simpleSQL.connect(serverless=True, database="pay.db") as db:
         db.query_update_table(type(model), model)
         db.commit()
+    print(f"account {model.__dict__} updated.")
 
 
 def get_all(model):
@@ -62,11 +63,14 @@ def delete(model, col, value):
 @app.put("/account")
 def update_account():
     acc = flask.request.json
+    print(acc , " account")
     if not acc:
         return "Bad Request", 400
     user = get_by_id(Account(0, 0, 0), acc["user_id"])
+    print("user ",user)
     if not user:
         return "User Not Found", 404
+    user = Account(**acc)
     update(user)
     return "OK", 200
 

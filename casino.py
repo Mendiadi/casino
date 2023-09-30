@@ -12,7 +12,7 @@ service_run = True
 
 app = flask.Flask("casino")
 
-active_games = []
+
 game_ids = {}
 players_in_searching = {}
 
@@ -48,13 +48,16 @@ def tracker():
     while service_run:
         players = get_two_players()
         if players:
-            game_ids["".join(players)] = Match("".join(players))
+            game_ids["$".join(players)] = Match("$".join(players))
         time.sleep(0.5)
+        print(f"casino statuses: game_ids = {game_ids}")
+
+        print(f"casino statuses: players_searching = {players_in_searching}")
 
 
 class Casino:
     def __init__(self, name):
-        self.active_games = []
+
         self.history_games = []
 
     @staticmethod
@@ -96,11 +99,11 @@ class Casino:
         for bonus,val in metadata_bonus.items():
             if val:
                 won_cash += 50
-        r = requests.put("http://127.0.0.1:5555/withdraw", params={"user_id":lost_user,"cash":
+        r = requests.put("http://127.0.0.1:5555/withdraw", params={"user_id":lost_team,"cash":
                                             lost_cash})
         if not r.ok:
             return r.text,r.status_code
-        r = requests.put("http://127.0.0.1:5555/deposit", params={"user_id": won_user, "cash":
+        r = requests.put("http://127.0.0.1:5555/deposit", params={"user_id": won_team, "cash":
             won_cash})
         if not r.ok:
             return r.text, r.status_code
@@ -124,7 +127,9 @@ def start_game():
     for data in metadata.values():
         if type(data) != int and data is not None:
             return f"Bad metadata type {type(data)}"
+
     r = requests.get("http://127.0.0.1:5555/balance", params={"user_id": user})
+
     if not r.ok:
         return r.text, r.status_code
     if len(game_ids) == 0:
@@ -135,9 +140,20 @@ def start_game():
     if not team:
         return "bad request",400
     for g in game_ids:
-        if user in g:
+        if user in g.split("$"):
             if len(game_ids[g].teams) == 2:
                 return Casino.process_game(game_ids[g],metadata)
+            for usr in game_ids[g].games:
+                if usr != user:
+
+                    r = requests.get("http://127.0.0.1:9090/login",params={"user_id":usr})
+                    if not r.ok:
+                        return r.text,r.status_code
+                    else:
+                        if not r.json()["status"]:
+                            game_ids.pop(game_ids[g].match_id)
+                            return "user_left", 200
+
             if user not in game_ids[g].teams:
                 game_ids[g].teams[user] = team
     # game logic
@@ -167,17 +183,17 @@ def get_game():
     if not r.ok:
         return r.text, r.status_code
     for g in game_ids:
-        if game_obj.p1 in g:
+        if game_obj.p1 in g.split("$"):
             game_ids[g].games[game_obj.p1] = game_obj
             return flask.jsonify(game_ids[g].as_json()), 200
     if game_obj.p1 in players_in_searching:
         return "OK", 200
     if p2:
         players_in_searching[game_obj.p1] = game_obj.p1
-        active_games.append(game_obj)
+
 
         return "OK", 200
-    active_games.append(game_obj)
+
     return "OK", 200
 
 

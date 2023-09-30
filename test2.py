@@ -100,8 +100,22 @@ if __name__ == '__main__':
     # get_games_all(["1111","2222"])
     # start_games_all(["1111","2222"])
     # quit()
-    for i in range(2):
+    # log_out_all(["2222"])
+    for i in range(50):
         test()
-        time.sleep(1)
-
-
+        time.sleep(random.randint(1,5))
+    # login_all(["1111","2222"])
+    # get_games_all(["1111","2222"])
+    # get_games_all(["1111","2222"])
+    # get_games_all(["1111","2222"])
+    # start_games_all("1111")
+    # start_games_all("1111")
+    # start_games_all("1111")
+    #
+    # log_out_all("2222")
+    # start_games_all("1111")
+    # start_games_all("1111")
+    # start_games_all("1111")
+    # start_games_all("1111")
+    #
+    # test()

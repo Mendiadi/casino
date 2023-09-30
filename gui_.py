@@ -6,6 +6,8 @@ import sys
 
 import requests
 
+# Initialize Pygame
+
 slider_min = 0
 slider_max = 100
 slider_dragging = False
@@ -15,8 +17,10 @@ bonus_entries = [0, 0, 0, 0]
 bonus_entry_rects = []
 start_bonus_button = pygame.Rect(350 - 75, 500, 150, 50)
 active_bonus_entry = False
-LOADING_TIME = 3000  # Time in milliseconds (3 seconds)
+back_button = pygame.Rect(300, 250, 200, 50)
 
+
+# loading_font = pygame.font.Font(None, 36)
 def run(user_id):
     def update_user_data():
         time.sleep(5)
@@ -29,7 +33,7 @@ def run(user_id):
     # external data
     BALANCE_VALUE = int(requests.get("http://127.0.0.1:5555/balance",
                                      params={"user_id": user_id}).text)
-
+    pygame.init()
     # Constants
     WIDTH, HEIGHT = 800, 600
     BACKGROUND_COLOR = (0, 128, 0)
@@ -37,8 +41,6 @@ def run(user_id):
     BUTTON_COLOR = (255, 0, 0)
     SLIDER_COLOR = (0, 0, 255)
 
-    # Initialize Pygame
-    pygame.init()
     # Create the screen
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("CASINO")
@@ -52,32 +54,32 @@ def run(user_id):
     # Create the "Start Game" button rect
     start_button = pygame.Rect(300, 250, 200, 50)
 
-
-
     # Create a font for displaying text
-    loading_font = pygame.font.Font(None, 36)
 
     # Get the current time
 
-
     def process_loading():
-
-
-
         if not Handler.trigger_loading:
-
-            pygame.display.set_caption("CASINO")
+            Handler.title_text = "CASINO"
+            pygame.display.set_caption(Handler.title_text)
         else:
-            pygame.display.set_caption("waiting for other player...")
+            Handler.title_text = "waiting for other player..."
+            pygame.display.set_caption(Handler.title_text)
+
     class Handler:
-        next_event_handler=None
+        next_event_handler = None
         next_screen_handler = None
         current_screen_handler = None
         current_event_handler = None
         trigger_loading = False
+        title_text = ""
+
     class Adapter:
         def __init__(self):
-            self.is_waiting_for_start_game = None
+            self.reset()
+
+        def reset(self):
+            self.is_waiting_for_start_game = False
             self.is_searching = False
             self.game = None
             self.match = None
@@ -92,7 +94,7 @@ def run(user_id):
                     res = "OK"
                     Handler.trigger_loading = True
 
-                    while res.lower() == "ok":
+                    while res.lower() == "ok" or len(r.json()) < 5:
 
                         time.sleep(0.5)
 
@@ -104,31 +106,45 @@ def run(user_id):
                             res = r.text
                     self.is_searching = False
                     Handler.trigger_loading = False
-                    self.game = res
+                    self.game = r.json()
+
 
         def start_game(self):
             if not self.is_waiting_for_start_game:
+                print("inside adapter")
                 r = requests.post("http://127.0.0.1:5050/game",
                                   json={"user_id": user_id, "team": user_id})
                 Handler.trigger_loading = True
-                threading.Thread(target=process_loading, daemon=True).start()
+
                 if r.ok:
                     self.is_waiting_for_start_game = True
                     res = "OK"
                     while res.lower() == "ok":
-
+                        print("adapter loop")
                         time.sleep(0.5)
                         r = requests.post("http://127.0.0.1:5050/game",
                                           json={"user_id": user_id, "team": user_id})
                         print(r, r.text)
                         if r.ok:
                             res = r.text
+                    if res == "user_left":
+                        adapter.reset()
+                        Handler.current_screen_handler = draw_home_screen
+                        Handler.current_event_handler = welcome_window_events_handler
+                        Handler.title_text = "user left the game"
+                        Handler.trigger_loading = False
+                        return
                     self.is_waiting_for_start_game = False
-                    self.match = res
+                    self.match = r.json()
                     Handler.trigger_loading = False
                     update_user_data()
 
     adapter = Adapter()
+
+    def get_match_headline():
+        if adapter.match:
+            return f"match result : {adapter.match['status']}"
+        return "wait for player 2 be ready.."
 
     def draw_home_screen():
         screen.fill(BACKGROUND_COLOR)
@@ -145,6 +161,30 @@ def run(user_id):
         pygame.display.flip()
 
         # Function to draw the second window
+
+    def draw_versus_screen():
+        screen.fill(BACKGROUND_COLOR)
+
+        # Draw player profile label
+        profile_label = font.render(current_player_profile, True, TEXT_COLOR)
+        screen.blit(profile_label, (20, 20))
+        versus_label = font.render(get_match_headline(), True, TEXT_COLOR)
+        screen.blit(versus_label, (20, 60))
+
+        # Draw the "Start Game" button
+        pygame.draw.rect(screen, BUTTON_COLOR, back_button)
+        start_text = font.render("back", True, TEXT_COLOR)
+        screen.blit(start_text, (350, 260))
+
+        pygame.display.flip()
+
+    def get_game_text():
+        if adapter.game:
+            for game in adapter.game:
+                if type(adapter.game[game]) is dict:
+                    if adapter.game[game].get("p1", None) and game != user_id:
+                        return f"you play VS {game}"
+        return "wait for game.."
 
     def draw_second_window():
         screen.fill(BACKGROUND_COLOR)
@@ -178,10 +218,11 @@ def run(user_id):
     # Function to draw the bonus window
     def draw_bonus_window():
         screen.fill(BACKGROUND_COLOR)
-        print("draw")
         # Draw header
         header_text = font.render("Choose Bonus", True, TEXT_COLOR)
         screen.blit(header_text, (350 - header_text.get_width() // 2, 20))
+        header_text_2 = font.render(get_game_text(), True, TEXT_COLOR)
+        screen.blit(header_text_2, (350 - header_text_2.get_width() // 2, 50))
         header_text = font.render(f"BALANCE: ${BALANCE_VALUE}", True, TEXT_COLOR)
         screen.blit(header_text, (350 - header_text.get_width() // 2, 80))
 
@@ -203,10 +244,10 @@ def run(user_id):
             screen.blit(entry_input_text, (entry_rect.x + 10, entry_rect.centery - entry_input_text.get_height() // 2))
 
         # Draw the "Start" button
-
-        pygame.draw.rect(screen, BUTTON_COLOR, start_bonus_button)
-        start_bonus_text = font.render("Start", True, TEXT_COLOR)
-        screen.blit(start_bonus_text, (350 - start_bonus_text.get_width() // 2, 510))
+        if adapter.game:
+            pygame.draw.rect(screen, BUTTON_COLOR, start_bonus_button)
+            start_bonus_text = font.render("Start", True, TEXT_COLOR)
+            screen.blit(start_bonus_text, (350 - start_bonus_text.get_width() // 2, 510))
         if not bonus_entry_rects:
             entry_height = 50
             entry_spacing = 20
@@ -214,6 +255,14 @@ def run(user_id):
                 entry_rect = pygame.Rect(300, 150 + i * (entry_height + entry_spacing), 200, entry_height)
                 bonus_entry_rects.append(entry_rect)
         pygame.display.flip()
+
+    def versus_window_events_handler(event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if start_button.collidepoint(event.pos):
+                # Toggle the second window
+                adapter.reset()
+                Handler.current_screen_handler = draw_home_screen
+                Handler.current_event_handler = welcome_window_events_handler
 
     def second_window_events_handler(event):
         global AMOUNT_OF_POT, slider_dragging, slider_value, slider_max, slider_min
@@ -246,10 +295,10 @@ def run(user_id):
             if start_bonus_button.collidepoint(event.pos):
 
                 if not adapter.is_waiting_for_start_game:
-
+                    print("adapter run")
                     threading.Thread(target=adapter.start_game, daemon=True).start()
-                    Handler.current_event_handler = welcome_window_events_handler
-                    Handler.current_screen_handler = draw_home_screen
+                    Handler.current_event_handler = versus_window_events_handler
+                    Handler.current_screen_handler = draw_versus_screen
 
             for i, entry_rect in enumerate(bonus_entry_rects):
                 if entry_rect.collidepoint(event.pos):
@@ -272,7 +321,6 @@ def run(user_id):
                 Handler.current_screen_handler = draw_second_window
                 Handler.current_event_handler = second_window_events_handler
 
-
     # Main game loop
     running = True
     Handler.current_event_handler = welcome_window_events_handler
@@ -281,6 +329,9 @@ def run(user_id):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                r = requests.put("http://127.0.0.1:9090/logout", json={"user_id": user_id})
+                print(r, r.text)
+                break
             Handler.current_event_handler(event)
         Handler.current_screen_handler()
         process_loading()

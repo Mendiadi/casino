@@ -31,9 +31,11 @@ def deposit():
     user_balance = int(user.json()["balance"])
     if not user:
         return "User Not Found", 404
-    user.json()["balance"] = str(cash+user_balance)
-    requests.put("http://127.0.0.1:5556/account", json=user.json())
-    return "OK", 200
+    user_data = user.json().copy()
+    user_data["balance"] = str(cash+user_balance)
+    print(f"deposit user balance - {user_data['balance']} to {str(cash+user_balance)}")
+    r=requests.put("http://127.0.0.1:5556/account", json=user_data)
+    return r.text,r.status_code
 
 
 @app.put("/withdraw")
@@ -48,11 +50,15 @@ def withdraw():
     if not cash or type(cash) is not int:
         return "Bad Request", 400
     user_balance = int(user.json()["balance"])
-    if  user_balance < cash:
+    if user_balance < cash:
         return "Bad balance", 400
-    user.json()["balance"] = str(user_balance - cash)
-    requests.put("http://127.0.0.1:5556/account", json=user.json())
-    return "OK", 200
+    user_data = user.json().copy()
+    user_data["balance"] = str(user_balance - cash)
+    print(f"deposit user balance - {user_data['balance']} to {str(user_balance-cash)}")
+
+    r=requests.put("http://127.0.0.1:5556/account", json=user_data)
+    return r.text,r.status_code
+
 
 
 def check_login():
