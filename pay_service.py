@@ -28,9 +28,10 @@ def deposit():
     if not cash or type(cash) is not int:
         return "Bad Request", 400
     user = requests.get("http://127.0.0.1:5556/account", params={"user_id": acc})
+    user_balance = int(user.json()["balance"])
     if not user:
         return "User Not Found", 404
-    user.json()["balance"] += cash
+    user.json()["balance"] = str(cash+user_balance)
     requests.put("http://127.0.0.1:5556/account", json=user.json())
     return "OK", 200
 
@@ -43,12 +44,13 @@ def withdraw():
     user = requests.get("http://127.0.0.1:5556/account", params={"user_id": acc})
     if not user:
         return "User Not Found", 404
-    cash = flask.request.args.get("cash", None, type=int)
+    cash = int(flask.request.args.get("cash", None, type=int))
     if not cash or type(cash) is not int:
         return "Bad Request", 400
-    if user.json()["balance"] < cash:
+    user_balance = int(user.json()["balance"])
+    if  user_balance < cash:
         return "Bad balance", 400
-    user.json()["balance"] -= cash
+    user.json()["balance"] = str(user_balance - cash)
     requests.put("http://127.0.0.1:5556/account", json=user.json())
     return "OK", 200
 

@@ -62,12 +62,15 @@ while running:
                 if 160 <= event.pos[1] <= 200:
                     # Add code to handle register button click and redirection here
                     print("Register button clicked")
-                    r = requests.post("http://127.0.0.1:9090/register", json={"user_id": USER_ID})
-                    print(r, r.text)
-                    if r.ok:
-                        print("register sucess")
-                    else:
-                        print(r.text)
+                    def register():
+
+                        r = requests.post("http://127.0.0.1:9090/register", json={"user_id": USER_ID})
+                        print(r, r.text)
+                        if r.ok:
+                            print("register sucess")
+                        else:
+                            print(r.text)
+                    threading.Thread(target=register,daemon=True,name="register").start()
                 elif 220 <= event.pos[1] <= 260:
                     # Add code to handle login button click and redirection here
                     print("User ID:", USER_ID)

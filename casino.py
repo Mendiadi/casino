@@ -84,7 +84,7 @@ class Casino:
             if data:
                 metadata_bonus[key] = len(match.results[key]) == data
         match.results["metadata_bonus"] = metadata_bonus
-        won_team = match.results["status"].replace(" win")
+        won_team = match.results["status"].replace(" win","")
         for u,team in match.teams.items():
             if team != won_team:
                 lost_team = team

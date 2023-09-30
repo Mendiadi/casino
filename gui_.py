@@ -6,17 +6,25 @@ import sys
 
 import requests
 
-
+slider_min = 0
+slider_max = 100
+slider_dragging = False
+AMOUNT_OF_POT = 0
+slider_value = 0
+bonus_entries = [0, 0, 0, 0]
+bonus_entry_rects = []
+start_bonus_button = pygame.Rect(350 - 75, 500, 150, 50)
+active_bonus_entry = False
+LOADING_TIME = 3000  # Time in milliseconds (3 seconds)
 
 def run(user_id):
     def update_user_data():
-        time.sleep(15)
+        time.sleep(5)
         global BALANCE_VALUE
-        BALANCE_VALUE= int(requests.get("http://127.0.0.1:5555/balance",
-                                                params={"user_id": user_id}).text)
+        BALANCE_VALUE = int(requests.get("http://127.0.0.1:5555/balance",
+                                         params={"user_id": user_id}).text)
 
     # internal data
-    AMOUNT_OF_POT = 0
 
     # external data
     BALANCE_VALUE = int(requests.get("http://127.0.0.1:5555/balance",
@@ -39,31 +47,34 @@ def run(user_id):
     font = pygame.font.Font(None, 36)
 
     # Player profile content
-    current_player_profile = f"Welcome Back: {user_id}{' '*15}Your Balance: ${BALANCE_VALUE}"
+    current_player_profile = f"Welcome Back: {user_id}{' ' * 15}Your Balance: ${BALANCE_VALUE}"
 
     # Create the "Start Game" button rect
     start_button = pygame.Rect(300, 250, 200, 50)
 
-    # Flag to control the second window
-    show_second_window = False
-
-    # Flag to control the bonus window
-    show_bonus_window = False
 
 
+    # Create a font for displaying text
+    loading_font = pygame.font.Font(None, 36)
 
-    # Flag to control slider interaction
-    slider_dragging = False
+    # Get the current time
 
-    # Slider properties
-    slider_min = 0
-    slider_max = 100
-    slider_value = slider_min
 
-    # Bonus window entries and values
-    bonus_entries = [0, 0, 0, 0]
-    bonus_entry_rects = []
-    start_bonus_button = pygame.Rect(350 - 75, 400, 150, 50)
+    def process_loading():
+
+
+
+        if not Handler.trigger_loading:
+
+            pygame.display.set_caption("CASINO")
+        else:
+            pygame.display.set_caption("waiting for other player...")
+    class Handler:
+        next_event_handler=None
+        next_screen_handler = None
+        current_screen_handler = None
+        current_event_handler = None
+        trigger_loading = False
     class Adapter:
         def __init__(self):
             self.is_waiting_for_start_game = None
@@ -71,7 +82,7 @@ def run(user_id):
             self.game = None
             self.match = None
 
-        def get_game(self,online=True):
+        def get_game(self, online=True):
             if not self.is_searching:
                 r = requests.get("http://127.0.0.1:5050/game",
                                  params={"p1": user_id, "action": 2, "bet": 2,
@@ -79,26 +90,33 @@ def run(user_id):
                 if r.ok:
                     self.is_searching = True
                     res = "OK"
+                    Handler.trigger_loading = True
+
                     while res.lower() == "ok":
+
                         time.sleep(0.5)
+
                         r = requests.get("http://127.0.0.1:5050/game",
                                          params={"p1": user_id, "action": 2, "bet": 2,
                                                  "cash_pot": 500, "p2": online})
-                        print(r,r.text)
+                        print(r, r.text)
                         if r.ok:
-
                             res = r.text
                     self.is_searching = False
+                    Handler.trigger_loading = False
                     self.game = res
 
         def start_game(self):
             if not self.is_waiting_for_start_game:
                 r = requests.post("http://127.0.0.1:5050/game",
                                   json={"user_id": user_id, "team": user_id})
+                Handler.trigger_loading = True
+                threading.Thread(target=process_loading, daemon=True).start()
                 if r.ok:
                     self.is_waiting_for_start_game = True
                     res = "OK"
                     while res.lower() == "ok":
+
                         time.sleep(0.5)
                         r = requests.post("http://127.0.0.1:5050/game",
                                           json={"user_id": user_id, "team": user_id})
@@ -107,6 +125,8 @@ def run(user_id):
                             res = r.text
                     self.is_waiting_for_start_game = False
                     self.match = res
+                    Handler.trigger_loading = False
+                    update_user_data()
 
     adapter = Adapter()
 
@@ -158,7 +178,7 @@ def run(user_id):
     # Function to draw the bonus window
     def draw_bonus_window():
         screen.fill(BACKGROUND_COLOR)
-
+        print("draw")
         # Draw header
         header_text = font.render("Choose Bonus", True, TEXT_COLOR)
         screen.blit(header_text, (350 - header_text.get_width() // 2, 20))
@@ -186,74 +206,84 @@ def run(user_id):
 
         pygame.draw.rect(screen, BUTTON_COLOR, start_bonus_button)
         start_bonus_text = font.render("Start", True, TEXT_COLOR)
-        screen.blit(start_bonus_text, (350 - start_bonus_text.get_width() // 2, 410))
-
+        screen.blit(start_bonus_text, (350 - start_bonus_text.get_width() // 2, 510))
+        if not bonus_entry_rects:
+            entry_height = 50
+            entry_spacing = 20
+            for i in range(4):
+                entry_rect = pygame.Rect(300, 150 + i * (entry_height + entry_spacing), 200, entry_height)
+                bonus_entry_rects.append(entry_rect)
         pygame.display.flip()
+
+    def second_window_events_handler(event):
+        global AMOUNT_OF_POT, slider_dragging, slider_value, slider_max, slider_min
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            for i in range(1):
+                button_rect = pygame.Rect(100 + i * (150 + 20), 150, 150, 50)
+                if button_rect.collidepoint(event.pos):
+                    # Show the bonus window when clicking a button
+                    if not adapter.is_searching:
+                        threading.Thread(target=adapter.get_game, daemon=True).start()
+                    Handler.current_screen_handler = draw_bonus_window
+                    Handler.current_event_handler = bonus_window_events_handler
+
+                    break
+            if 350 <= event.pos[0] <= 450 and 500 <= event.pos[1] <= 530:
+                slider_dragging = True
+        if event.type == pygame.MOUSEBUTTONUP:
+            slider_dragging = False
+        if event.type == pygame.MOUSEMOTION and slider_dragging:
+            x, _ = event.pos
+            x = max(350, min(x, 450))  # Constrain slider within bounds
+            slider_value = int(((x - 350) / 100) * (slider_max - slider_min) + slider_min)
+            AMOUNT_OF_POT = slider_value
+
+    def bonus_window_events_handler(event):
+        global active_bonus_entry, bonus_entries, bonus_entry_rects
+        if event.type == pygame.MOUSEBUTTONDOWN:
+
+            if start_bonus_button.collidepoint(event.pos):
+
+                if not adapter.is_waiting_for_start_game:
+
+                    threading.Thread(target=adapter.start_game, daemon=True).start()
+                    Handler.current_event_handler = welcome_window_events_handler
+                    Handler.current_screen_handler = draw_home_screen
+
+            for i, entry_rect in enumerate(bonus_entry_rects):
+                if entry_rect.collidepoint(event.pos):
+                    # Activate the clicked bonus entry for editing
+                    active_bonus_entry = i
+                    break
+        if event.type == pygame.KEYDOWN and active_bonus_entry is not None:
+            if event.key == pygame.K_BACKSPACE:
+                bonus_entries[active_bonus_entry] = int(bonus_entries[active_bonus_entry] / 10)
+            elif event.key in [pygame.K_0, pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6,
+                               pygame.K_7, pygame.K_8, pygame.K_9]:
+                digit = int(event.unicode)
+                bonus_entries[active_bonus_entry] = bonus_entries[active_bonus_entry] * 10 + digit
+
+    def welcome_window_events_handler(event):
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if start_button.collidepoint(event.pos):
+                # Toggle the second window
+                Handler.current_screen_handler = draw_second_window
+                Handler.current_event_handler = second_window_events_handler
+
 
     # Main game loop
     running = True
+    Handler.current_event_handler = welcome_window_events_handler
+    Handler.current_screen_handler = draw_home_screen
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if start_button.collidepoint(event.pos):
-                    # Toggle the second window
-                    show_second_window = not show_second_window
-                elif show_second_window:
-                    for i in range(1):
-                        button_rect = pygame.Rect(100 + i * (150 + 20), 150, 150, 50)
-                        if button_rect.collidepoint(event.pos):
-                            # Show the bonus window when clicking a button
-                            if not adapter.is_searching:
-                                threading.Thread(target=adapter.get_game,daemon=True).start()
-                            show_bonus_window = True
-                            break
-                    if show_bonus_window:
-                        if start_bonus_button.collidepoint(event.pos):
-                            if not adapter.is_waiting_for_start_game:
-                                threading.Thread(target=adapter.start_game,daemon=True).start()
-                                threading.Thread(target=update_user_data(),daemon=True).start()
-                        for i, entry_rect in enumerate(bonus_entry_rects):
-                            if entry_rect.collidepoint(event.pos):
-                                # Activate the clicked bonus entry for editing
-                                active_bonus_entry = i
-
-                                break
-                    # Check for slider interaction
-                    if 350 <= event.pos[0] <= 450 and 500 <= event.pos[1] <= 530:
-                        slider_dragging = True
-            if event.type == pygame.MOUSEBUTTONUP:
-                slider_dragging = False
-                active_bonus_entry = None
-            if event.type == pygame.MOUSEMOTION and slider_dragging:
-                x, _ = event.pos
-                x = max(350, min(x, 450))  # Constrain slider within bounds
-                slider_value = int(((x - 350) / 100) * (slider_max - slider_min) + slider_min)
-                AMOUNT_OF_POT = slider_value
-            if event.type == pygame.KEYDOWN and show_bonus_window and active_bonus_entry is not None:
-                print(type(active_bonus_entry))
-                if event.key == pygame.K_BACKSPACE:
-                    bonus_entries[active_bonus_entry] = int(bonus_entries[active_bonus_entry] / 10)
-                elif event.key in [pygame.K_0, pygame.K_1, pygame.K_2, pygame.K_3, pygame.K_4, pygame.K_5, pygame.K_6,
-                                   pygame.K_7, pygame.K_8, pygame.K_9]:
-                    digit = int(event.unicode)
-                    bonus_entries[active_bonus_entry] = bonus_entries[active_bonus_entry] * 10 + digit
-
-        if show_second_window:
-            if show_bonus_window:
-                if not bonus_entry_rects:
-                    entry_height = 50
-                    entry_spacing = 20
-                    for i in range(4):
-                        entry_rect = pygame.Rect(300, 150 + i * (entry_height + entry_spacing), 200, entry_height)
-                        bonus_entry_rects.append(entry_rect)
-                draw_bonus_window()
-            else:
-                draw_second_window()
-        else:
-            draw_home_screen()
-
+            Handler.current_event_handler(event)
+        Handler.current_screen_handler()
+        process_loading()
     # Quit Pygame
     pygame.quit()
     sys.exit()

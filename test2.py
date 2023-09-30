@@ -97,9 +97,9 @@ def test():
     assert_all(start_games_2, "Unauthorized", 401)
 
 if __name__ == '__main__':
-    get_games_all(["1111","2222"])
-    start_games_all(["1111","2222"])
-    quit()
+    # get_games_all(["1111","2222"])
+    # start_games_all(["1111","2222"])
+    # quit()
     for i in range(2):
         test()
         time.sleep(1)
