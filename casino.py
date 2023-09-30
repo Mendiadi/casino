@@ -1,6 +1,6 @@
 import threading
 import time
-
+import routes
 import flask
 import requests
 
@@ -62,7 +62,8 @@ class Casino:
 
     @staticmethod
     def search_players(user_id):
-        r = requests.get("http://127.0.0.1:9090/sessions",
+
+        r = requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_session_auth_port}/{routes.Routes.service_session_auth_sessions}",
                          params={"user_id": user_id})
         if r.ok:
             return r.json()
@@ -76,7 +77,8 @@ class Casino:
             del match
             return flask.jsonify(temp),200
         teamscpy = match.teams.copy()
-        r = requests.get("http://127.0.0.1:8080/match", params={"team_a":teamscpy.popitem()[1]
+
+        r = requests.get( f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_simulator_port}/{routes.Routes.service_simulator_match}", params={"team_a":teamscpy.popitem()[1]
                                                                 ,"team_b":teamscpy.popitem()[1]})
         print(match.as_json())
         if not r.ok:
@@ -99,11 +101,12 @@ class Casino:
         for bonus,val in metadata_bonus.items():
             if val:
                 won_cash += 50
-        r = requests.put("http://127.0.0.1:5555/withdraw", params={"user_id":lost_team,"cash":
+
+        r = requests.put(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_pay_port}/{routes.Routes.service_pay_withdraw}", params={"user_id":lost_team,"cash":
                                             lost_cash})
         if not r.ok:
             return r.text,r.status_code
-        r = requests.put("http://127.0.0.1:5555/deposit", params={"user_id": won_team, "cash":
+        r = requests.put(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_pay_port}/{routes.Routes.service_pay_deposit}", params={"user_id": won_team, "cash":
             won_cash})
         if not r.ok:
             return r.text, r.status_code
@@ -113,7 +116,7 @@ class Casino:
         # calculate winner do update balances
 
 
-@app.post("/game")
+@app.post(f"/{routes.Routes.service_casino_game}")
 def start_game():
     metadata_schema = {"goals":None,
                       "assists":None,
@@ -128,7 +131,7 @@ def start_game():
         if type(data) != int and data is not None:
             return f"Bad metadata type {type(data)}"
 
-    r = requests.get("http://127.0.0.1:5555/balance", params={"user_id": user})
+    r = requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_pay_port}/{routes.Routes.service_pay_balance}", params={"user_id": user})
 
     if not r.ok:
         return r.text, r.status_code
@@ -146,7 +149,7 @@ def start_game():
             for usr in game_ids[g].games:
                 if usr != user:
 
-                    r = requests.get("http://127.0.0.1:9090/login",params={"user_id":usr})
+                    r = requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_session_auth_port}/{routes.Routes.service_session_auth_login}",params={"user_id":usr})
                     if not r.ok:
                         return r.text,r.status_code
                     else:
@@ -168,7 +171,7 @@ def get_two_players():
     return None
 
 
-@app.get("/game")
+@app.get(f"/{routes.Routes.service_casino_game}")
 def get_game():
     game = {}
     for arg in ("p1", "action", "bet", "cash_pot"):
@@ -179,7 +182,7 @@ def get_game():
     p2 = flask.request.args.get("p2", None)
     game.update({"p2": p2})
     game_obj = Game(**game)
-    r = requests.get("http://127.0.0.1:5555/balance", params={"user_id": game_obj.p1})
+    r = requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_pay_port}/{routes.Routes.service_pay_balance}", params={"user_id": game_obj.p1})
     if not r.ok:
         return r.text, r.status_code
     for g in game_ids:
@@ -199,5 +202,5 @@ def get_game():
 
 if __name__ == '__main__':
     threading.Thread(target=tracker, daemon=True).start()
-    app.run(port=5050)
+    app.run(port=routes.Routes.service_casino_port,host=routes.Routes.host_url)
     service_run = False

@@ -1,6 +1,6 @@
 import executor as simpleSQL
 import flask
-
+import routes
 app = flask.Flask("pay_db")
 
 
@@ -60,7 +60,7 @@ def delete(model, col, value):
         db.commit()
 
 
-@app.put("/account")
+@app.put(f"/{routes.Routes.service_db_account}")
 def update_account():
     acc = flask.request.json
     print(acc , " account")
@@ -75,7 +75,7 @@ def update_account():
     return "OK", 200
 
 
-@app.get("/account")
+@app.get(f"/{routes.Routes.service_db_account}")
 def get_account():
     acc = flask.request.args.get("user_id", None, type=str)
     print(acc)
@@ -88,7 +88,7 @@ def get_account():
     return flask.jsonify(user.__dict__), 200
 
 
-@app.post("/account")
+@app.post(f"/{routes.Routes.service_db_account}")
 def post_account():
     data = flask.request.json
     try:
@@ -105,7 +105,7 @@ def post_account():
 def main():
     create_db()
     create_table()
-    app.run(debug=True, port=5556)
+    app.run(debug=True, port=routes.Routes.service_db_port,host=routes.Routes.host_url)
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@ import flask
 import datetime
 import requests
 import threading
-
+import routes
 app = flask.Flask("session_auth")
 service_run = True
 sessions = {}
@@ -39,7 +39,7 @@ class Session:
         return self.__dict__
 
 
-@app.get("/sessions")
+@app.get(f"/{routes.Routes.service_session_auth_sessions}")
 def get_sessions():
     u = flask.request.args.get("user_id", None)
     if not u:
@@ -49,7 +49,7 @@ def get_sessions():
     return sessions, 200
 
 
-@app.get("/login")
+@app.get(f"/{routes.Routes.service_session_auth_login}")
 def get_login():
     user_id = flask.request.args.get("user_id", None)
     if not user_id:
@@ -60,29 +60,30 @@ def get_login():
     return flask.jsonify({"status": True}), 200
 
 
-@app.post("/register")
+@app.post(f"/{routes.Routes.service_session_auth_register}")
 def register():
     user = flask.request.json
-    res = requests.post("http://127.0.0.1:5556/account", json=user)
+    res = requests.post(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_db_port}/{routes.Routes.service_db_account}", json=user)
     if not res:
         return res.text, res.status_code
     return "OK", 200
 
 
-@app.post("/login")
+@app.post(f"/{routes.Routes.service_session_auth_login}")
 def login():
     user = flask.request.json
     if user["user_id"] in sessions:
         return "user logged in already", 400
     session = Session(user["user_id"])
-    res = requests.get("http://127.0.0.1:5556/account", params={"user_id": user["user_id"]})
+    res = requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_db_port}/{routes.Routes.service_db_account}",
+                       params={"user_id": user["user_id"]})
     if not res.ok:
         return res.text, res.status_code
     sessions[user["user_id"]] = session
     return "OK", 200
 
 
-@app.put("/logout")
+@app.put(f"/{routes.Routes.service_session_auth_logout}")
 def logout():
     user = flask.request.json
     s = sessions.get(user["user_id"], None)
@@ -94,5 +95,5 @@ def logout():
 
 if __name__ == '__main__':
     threading.Thread(target=read_sessions, daemon=True).start()
-    app.run(port=9090)
+    app.run(port=routes.Routes.service_session_auth_port,host=routes.Routes.host_url)
     service_run = False

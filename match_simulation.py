@@ -1,7 +1,7 @@
 import gym
 import random
 import flask
-
+import routes
 # Constants
 NUM_PLAYERS_PER_TEAM = 11
 MATCH_DURATION = 90  # minutes
@@ -224,7 +224,7 @@ def run_simulation(team_a, team_b):
 app = flask.Flask("match_simulation")
 
 
-@app.get("/match")
+@app.get(f"/{routes.Routes.service_simulator_match}")
 def get_match():
     team_a = flask.request.args.get("team_a", None)
     team_b = flask.request.args.get("team_b", None)
@@ -239,7 +239,7 @@ def get_match():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)
+    app.run(debug=True, port=routes.Routes.service_simulator_port,host=routes.Routes.host_url)
 
 # Main
 # if __name__ == "__main__":
