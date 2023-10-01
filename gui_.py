@@ -113,7 +113,7 @@ def run(user_id):
             if not self.is_waiting_for_start_game:
                 print("inside adapter")
                 r = requests.post(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_casino_port}/{routes.Routes.service_casino_game}",
-                                  json={"user_id": user_id, "team": user_id})
+                                  json={"user_id": user_id, "team": user_id,"p2":self.game[user_id]['p2']})
                 Handler.trigger_loading = True
 
                 if r.ok:
@@ -123,7 +123,7 @@ def run(user_id):
                         print("adapter loop")
                         time.sleep(0.5)
                         r = requests.post(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_casino_port}/{routes.Routes.service_casino_game}",
-                                          json={"user_id": user_id, "team": user_id})
+                                          json={"user_id": user_id, "team": user_id,"p2":self.game[user_id]['p2']})
                         print(r, r.text)
                         if r.ok:
                             res = r.text
