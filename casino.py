@@ -1,3 +1,4 @@
+import hashlib
 import threading
 import time
 
@@ -25,8 +26,9 @@ class PVP:
         self.p1 = p1
         self.p2 = p2
 
-    def __hash__(self):
-        return self.p1 + "$" + self.p2
+    def hash(self):
+        return hashlib.md5(str(self.p1 + "$" + self.p2).encode()).hexdigest()
+
 
 
 class Match:
@@ -62,7 +64,7 @@ def tracker():
     if players:
         pvp = PVP(*players)
         pvp_dict.update({pvp.p2: pvp, pvp.p1: pvp})
-        game_ids[pvp] = Match(pvp)
+        game_ids[pvp.hash()] = Match(pvp.hash())
     # time.sleep(0.5)
     print(f"casino statuses: game_ids = {[game.__dict__ for game in game_ids.values()]}")
     print(f"casino status : players_waiting_ready = {waiting_for_ready_players}")
@@ -166,16 +168,6 @@ def user_validation(user):
     return None, None
 
 
-def get_relevant_game(p1, p2):
-    possible_id = f"{p2}${p1}"
-    possible_id_2 = f"{p1}${p2}"
-    game = game_ids.get(possible_id, None)
-    if game is None:
-        game = game_ids.get(possible_id_2, None)
-    if game is None:
-        return None
-    return game
-
 
 def is_user_online(usr, game):
     r = routes.get(urls.service_session_auth_port, urls.service_session_auth_login,
@@ -216,7 +208,7 @@ def start_game():
     p2 = flask.request.json.get("p2", None)
     if not p2:
         p2 = pvp_dict[user].p1 if pvp_dict[user].p1 != user else pvp_dict[user].p2
-    game = get_relevant_game(user, p2)
+    game = game_ids.get(pvp_dict[p2].hash())
     if len(game.teams) == 2 and p2 in waiting_for_start_players and user in waiting_for_start_players:
         return Casino.process_game(game, metadata)
     status = is_user_online(p2, game)
@@ -263,7 +255,7 @@ def get_game():
         return msg, code
     pvp = pvp_dict.get(game_obj.p1, None)
     if pvp:
-        game_id = game_ids.get(pvp, None)
+        game_id = game_ids.get(pvp.hash(), None)
         if game_id:
             game_id.games[game_obj.p1] = game_obj
             waiting_for_ready_players.add(game_obj.p1)
