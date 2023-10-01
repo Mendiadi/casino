@@ -19,7 +19,7 @@ def log_out_all(players):
 
         res.append((r.text,r.status_code))
     return res
-players = ("12345","2222","1111","3333","5555")
+players = ("12345","2222")
 
 def get_games_all(players):
     res =[]
@@ -35,7 +35,7 @@ def start_games_all(players):
     for p in players:
         time.sleep(float(f"0.{random.randint(1, 9)}"))
         r = requests.post("http://127.0.0.1:5050/game",
-                        json={"user_id":p,"team":p})
+                        json={"user_id":p,"team":p,"p2":""})
 
         print(r,r.text)
         res.append((r.text,r.status_code))
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     # start_games_all(["1111","2222"])
     # quit()
     # log_out_all(["2222"])
-    for i in range(50):
+    for i in range(1):
         test()
         time.sleep(random.randint(1,5))
     # login_all(["1111","2222"])
