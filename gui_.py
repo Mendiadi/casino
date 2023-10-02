@@ -20,6 +20,14 @@ active_bonus_entry = False
 back_button = pygame.Rect(300, 250, 200, 50)
 
 
+def load_image(image_path):
+    try:
+        image = pygame.image.load(image_path).convert()
+        return image
+    except pygame.error:
+        print(f"Error loading image from path: {image_path}")
+        return None
+
 # loading_font = pygame.font.Font(None, 36)
 def run(user_id):
     def update_user_data():
@@ -188,7 +196,8 @@ def run(user_id):
 
     def draw_second_window():
         screen.fill(BACKGROUND_COLOR)
-
+        image = load_image(r"C:\Users\adim\PycharmProjects\gui_project\world\assets\money.png")
+        screen.blit(image,(320 - image.get_width() // 2, 80))
         # Draw header
         header_text = font.render("Choose", True, TEXT_COLOR)
         screen.blit(header_text, (350, 20))
@@ -338,3 +347,5 @@ def run(user_id):
     # Quit Pygame
     pygame.quit()
     sys.exit()
+if __name__ == '__main__':
+    run("222")
