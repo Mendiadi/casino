@@ -37,8 +37,10 @@ class League:
         return League.players.get(pid, None)
 
     def add_goal(self, pid, value):
-        p = League.top_goals.get(pid, None) + value
-        League.top_goals.update({pid: p})
+        p = League.top_goals.get(pid, None)
+        if p:
+            p = p + value
+            League.top_goals.update({pid: p})
 
     def get_top_players(self, n=10):
         return {k: v for k, v in sorted(League.players.items(), key=lambda item: item[1])[:int(n):]}
