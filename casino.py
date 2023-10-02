@@ -25,7 +25,7 @@ class League:
 
     def update_rate(self, p_id, rate):
         p = League.players.get(p_id, None)
-        if not p:
+        if p is None:
             return
         if p + rate < 0:
             p = 0
@@ -38,7 +38,7 @@ class League:
 
     def add_goal(self, pid, value):
         p = League.top_goals.get(pid, None)
-        if p:
+        if p is not None:
             p = p + value
             League.top_goals.update({pid: p})
 
@@ -151,6 +151,7 @@ class Casino:
         print(f"casino statuses: players_searching = {Casino.players_in_searching}")
         print(f"casino statuses: pvp = {Casino.pvp_dict}")
         if match.results:
+
             temp = Casino.reset(match, sender)
             return flask.jsonify(temp), 200
 
@@ -190,7 +191,7 @@ class Casino:
         if not r.ok:
             return r.text, r.status_code
 
-        return "ok", 200
+        return flask.jsonify(match.results), 200
 
         # calculate winner do update balances
 
