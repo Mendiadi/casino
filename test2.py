@@ -99,7 +99,7 @@ def test():
 import routes
 def stress():
     users=[]
-    for i in range(10):
+    for i in range(50):
 
         users.append(f"{i}_guest")
     assert_all(login_all(users),"ok",200)
@@ -133,25 +133,8 @@ if __name__ == '__main__':
     print(r, r.text)
     r = routes.get(routes.Routes.service_casino_port, "external/players", params={"n": 3})
     print(r, r.text)
-    # get_games_all(["1111","2222"])
-    # start_games_all(["1111","2222"])
-    # quit()
-    # log_out_all(["2222"])
-    # for i in range(1):
-    #     test()
-    #     time.sleep(random.randint(1,5))
-    # login_all(["1111","2222"])
-    # get_games_all(["1111","2222"])
-    # get_games_all(["1111","2222"])
-    # get_games_all(["1111","2222"])
-    # start_games_all("1111")
-    # start_games_all("1111")
-    # start_games_all("1111")
-    #
-    # log_out_all("2222")
-    # start_games_all("1111")
-    # start_games_all("1111")
-    # start_games_all("1111")
-    # start_games_all("1111")
-    #
-    # test()
+    stress()
+    for i in range(3):
+        test()
+        time.sleep(random.randint(1,5))
+

@@ -37,6 +37,8 @@ class League:
         return League.players.get(pid, None)
 
     def add_goal(self, pid, value):
+        if pid not in League.top_goals:
+            League.top_goals.update({pid:0})
         p = League.top_goals.get(pid, None)
         if p is not None:
             p = p + value
