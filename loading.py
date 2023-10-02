@@ -19,9 +19,10 @@ display_interval = 0.5  # in seconds
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 pygame.display.set_caption("Text Queue Window")
 font = pygame.font.Font(None, FONT_SIZE)
-time_line = requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_simulator_port}/{routes.Routes.service_simulator_match}", params={"team_a":"s2"
-                             ,"team_b":"s"}).json().get("timeline")
-
+r = requests.get(f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_simulator_port}/{routes.Routes.service_simulator_match}", params={"team_a":"s2"
+                             ,"team_b":"s"}).json()
+time_line = r.get("timeline")
+print(r)
 text_list = [f"{key.replace(' ','')}: {val}" for key , val in sorted(time_line.items())]
 # List to hold the texts
 text_list_ordered = []
@@ -39,14 +40,14 @@ def draw_text(offset_y,offset_x,text,color):
     text_rect.topleft = (offset_x, offset_y)  # Position at the left top corner
     screen.blit(text_surface, text_rect)
 
-def format_match_data():
+def format_match_data(data):
     # {"teamname":{goals:0,assists:0,"yellow":0,red:0}}
     ...
 
 def draw_texts(color,data=None):
-    draw_text(5,10,"TEAM: ",color)
-    draw_text(35,10, "Goals: ", color)
-    draw_text(75,10, "Assists: ", color)
+    draw_text(5,10,f"TEAM:  ",color)
+    draw_text(35,10, f"Goals: {r.get('goals',0)}", color)
+    draw_text(75,10, f"Assists: {r.get('assists')}", color)
     draw_text(105,10, "Yellow Cards: ", color)
     draw_text(135,10, "Red Cards: ", color)
     draw_text(5,580,"TEAM: ",color)

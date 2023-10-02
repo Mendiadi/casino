@@ -86,19 +86,31 @@ class Casino:
         if r.ok:
             return r.json()
         return r.text, r.status_code
+    @staticmethod
+    def reset(match,sender):
+        waiting_for_start_players.remove(sender)
+        random_g = match.games.copy().popitem()[1]
+        pvp_dict.pop(random_g.p1, None)
+        pvp_dict.pop(random_g.p2, None)
+        temp = match.results.copy()
+        game_ids.pop(match.match_id)
+        del match
+        return temp
 
     @staticmethod
-    def process_game(match: Match, metadata):
+    def process_game(sender,match: Match, metadata):
+        print(f"casino statuses: game_ids = {[game.__dict__ for game in game_ids.values()]}")
+        print(f"casino status : players_waiting_ready = {waiting_for_ready_players}")
+        print(f"casino status : players_waiting_start = {waiting_for_start_players}")
+        print(f"casino statuses: players_searching = {players_in_searching}")
+        print(f"casino statuses: pvp = {players_in_searching}")
         if match.results:
-            random_g = match.games.copy().popitem()[1]
-            waiting_for_start_players.remove(random_g.p2)
-            waiting_for_start_players.remove(random_g.p1)
-            pvp_dict.pop(random_g.p1, None)
-            pvp_dict.pop(random_g.p2, None)
-            temp = match.results.copy()
-            game_ids.pop(match.match_id)
-            del match
+
+
+            temp = Casino.reset(match,sender)
             return flask.jsonify(temp), 200
+
+
         teamscpy = match.teams.copy()
 
         r = routes.get(urls.service_simulator_port, urls.service_simulator_match,
@@ -135,7 +147,7 @@ class Casino:
         if not r.ok:
             return r.text, r.status_code
 
-        return flask.jsonify(match.results), 200
+        return match.results, 200
 
         # calculate winner do update balances
 
@@ -201,24 +213,24 @@ def start_game():
     msg, code = user_validation(user)
     if msg and code:
         return msg, code
-
-    if user not in waiting_for_ready_players:
-        if user not in waiting_for_start_players:
-            return "no games ready", 400
     p2 = flask.request.json.get("p2", None)
     if not p2:
         p2 = pvp_dict[user].p1 if pvp_dict[user].p1 != user else pvp_dict[user].p2
     game = game_ids.get(pvp_dict[p2].hash())
     if len(game.teams) == 2 and p2 in waiting_for_start_players and user in waiting_for_start_players:
-        return Casino.process_game(game, metadata)
+        return Casino.process_game(user,game, metadata)
     status = is_user_online(p2, game)
     if status is not None:
         kick_player(p2)
         return status
+    if user not in waiting_for_ready_players:
+        if user not in waiting_for_start_players:
+            return "no games ready", 400
     if user not in game.teams:
         waiting_for_ready_players.remove(user)
         waiting_for_start_players.add(user)
         game.teams[user] = team
+
     # game logic
     return "OK", 200
 
