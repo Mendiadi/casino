@@ -19,7 +19,7 @@ def log_out_all(players):
 
         res.append((r.text,r.status_code))
     return res
-players = ("12345","2222")
+players = ("12345","2222","dd","d")
 
 def get_games_all(players):
     res =[]
@@ -99,26 +99,47 @@ def test():
 import routes
 def stress():
     users=[]
-    for i in range(55):
+    for i in range(10):
 
         users.append(f"{i}_guest")
     assert_all(login_all(users),"ok",200)
     assert_all(get_games_all(users),("ok","{"),200)
+    r = routes.get(routes.Routes.service_casino_port, "external/games")
+    print(r, r.text)
+    r = routes.get(routes.Routes.service_casino_port, "external/game", params={"pid": "4_guest"})
+    print(r, r.text)
     assert_all(start_games_all(users),("ok","{"),200)
+    assert_all(start_games_all(users),("ok","{"),200)
+    r = routes.get(routes.Routes.service_casino_port, "external/games")
+    print(r, r.text)
+    r = routes.get(routes.Routes.service_casino_port, "external/game", params={"pid": "4_guest"})
+    print(r, r.text)
 
     assert_all(log_out_all(users),"ok",200)
 
 
 
 if __name__ == '__main__':
-    # stress()
+    test()
+    r = routes.get(routes.Routes.service_casino_port, "external/games")
+    print(r, r.text)
+    r = routes.get(routes.Routes.service_casino_port, "external/game", params={"pid": "4_guest"})
+    print(r, r.text)
+    r = routes.get(routes.Routes.service_casino_port, "external/goals", params={"n": 4})
+    print(r, r.text)
+    r = routes.get(routes.Routes.service_casino_port, "external/goals")
+    print(r, r.text)
+    r = routes.get(routes.Routes.service_casino_port, "external/players")
+    print(r, r.text)
+    r = routes.get(routes.Routes.service_casino_port, "external/players", params={"n": 3})
+    print(r, r.text)
     # get_games_all(["1111","2222"])
     # start_games_all(["1111","2222"])
     # quit()
     # log_out_all(["2222"])
-    for i in range(1):
-        test()
-        time.sleep(random.randint(1,5))
+    # for i in range(1):
+    #     test()
+    #     time.sleep(random.randint(1,5))
     # login_all(["1111","2222"])
     # get_games_all(["1111","2222"])
     # get_games_all(["1111","2222"])

@@ -21,30 +21,30 @@ class League:
 
     def add_player(self, p_id):
         if p_id not in self.players:
-            self.players.update({p_id: 0})
+            League.players.update({p_id: 0})
 
     def update_rate(self, p_id, rate):
-        p = self.players.get(p_id, None)
+        p = League.players.get(p_id, None)
         if not p:
             return
         if p + rate < 0:
             p = 0
         else:
             p = p + rate
-        self.players.update({p_id: p})
+        League.players.update({p_id: p})
 
     def get_player(self, pid):
-        return self.players.get(pid, None)
+        return League.players.get(pid, None)
 
     def add_goal(self, pid, value):
-        p = self.top_goals.get(pid, None) + value
-        self.top_goals.update({pid: p})
+        p = League.top_goals.get(pid, None) + value
+        League.top_goals.update({pid: p})
 
     def get_top_players(self, n=10):
-        return {k: v for k, v in sorted(self.players.items(), key=lambda item: item[1])}[:n:]
+        return {k: v for k, v in sorted(League.players.items(), key=lambda item: item[1])[:int(n):]}
 
     def get_top_goals(self, n=10):
-        return {k: v for k, v in sorted(self.top_goals.items(), key=lambda item: item[1])}[:n:]
+        return {k: v for k, v in sorted(League.top_goals.items(), key=lambda item: item[1])[:int(n):]}
 
 
 class PVP:
@@ -120,11 +120,7 @@ class Casino:
     def reset(match, sender):
         print(f"reset for {sender} {match} {'=' * 100}")
         random_g = match.games.copy().popitem()[1]
-        Casino.pvp_dict.pop(random_g.p1, None)
-        Casino.pvp_dict.pop(random_g.p2, None)
         temp = match.results.copy()
-        Casino.game_ids.pop(match.match_id)
-        del match
         status = temp.get("status", "")
         League().add_player(random_g.p1)
         League().add_player(random_g.p2)
@@ -137,9 +133,13 @@ class Casino:
             League().update_rate(random_g.p1, 1)
         for g in temp.get("goals"):
             team = g.split(" ")[0]
-            goals = team.get("goals").get(g)
+            goals = temp.get("goals").get(g)
             League().add_goal(team, goals)
             League().update_rate(team, goals)
+        Casino.pvp_dict.pop(random_g.p1, None)
+        Casino.pvp_dict.pop(random_g.p2, None)
+        Casino.game_ids.pop(match.match_id)
+        del match
         return temp
 
     @staticmethod
@@ -188,7 +188,7 @@ class Casino:
         if not r.ok:
             return r.text, r.status_code
 
-        return match.results, 200
+        return "ok", 200
 
         # calculate winner do update balances
 
@@ -331,13 +331,13 @@ def external_game():
     if pvp:
         game = Casino.game_ids.get(pvp.hash(), None)
         if game:
-            return flask.jsonify(game.__dict__), 200
+            return flask.jsonify(game.as_json()), 200
     return "not found", 404
 
 
 @app.get("/external/games")
 def external_games():
-    return flask.jsonify(Casino.game_ids), 200
+    return flask.jsonify([{k:g.as_json()}  for k,g in Casino.game_ids.items()]), 200
 
 
 @app.get("/external/player_rate")
@@ -363,5 +363,6 @@ def external_goals():
 
 
 if __name__ == '__main__':
+    # threading.Thread(target=tracker,daemon=True).start()
     app.run(port=urls.service_casino_port, host=urls.host_url)
     service_run = False
