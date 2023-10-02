@@ -1,12 +1,5 @@
-import time
+from collections import OrderedDict
+players = OrderedDict({"a":2,"b":3,"z":0})
 
-import requests
-r = requests.post("http://127.0.0.1:5050/game",
-                json={"user_id":"12345","team":"BARCA"})
-print(r,r.text)
-time.sleep(0.5)
-
-
-
-
-
+for i in players.items():
+    print(i)

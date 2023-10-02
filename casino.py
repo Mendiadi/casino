@@ -14,11 +14,39 @@ service_run = True
 
 app = flask.Flask("casino")
 
-waiting_for_start_players = set()
-waiting_for_ready_players = set()
-game_ids = {}
-players_in_searching = {}
-pvp_dict = {}
+
+
+
+class League:
+    players = {}
+    top_goals = {}
+
+    def add_player(self,p_id):
+        if p_id not in self.players:
+            self.players.update({p_id:0})
+
+    def update_rate(self,p_id,rate):
+        p = self.players.get(p_id,None)
+        if not p:
+            return
+        if p + rate < 0:
+            p = 0
+        else:
+            p = p + rate
+        self.players.update({p_id:p})
+
+    def get_player(self,pid):
+        return self.players.get(pid,None)
+
+    def add_goal(self,pid,value):
+        p=self.top_goals.get(pid,None) + value
+        self.top_goals.update({pid:p})
+
+    def get_top_players(self):
+        return {k: v for k, v in sorted(self.players.items(), key=lambda item: item[1])}
+
+    def get_top_goals(self):
+        return {k: v for k, v in sorted(self.top_goals.items(), key=lambda item: item[1])}
 
 
 class PVP:
@@ -63,19 +91,23 @@ def tracker():
     players = get_two_players()
     if players:
         pvp = PVP(*players)
-        pvp_dict.update({pvp.p2: pvp, pvp.p1: pvp})
-        game_ids[pvp.hash()] = Match(pvp.hash())
+        Casino.pvp_dict.update({pvp.p2: pvp, pvp.p1: pvp})
+        Casino.game_ids[pvp.hash()] = Match(pvp.hash())
     # time.sleep(0.5)
-    print(f"casino statuses: game_ids = {[game.__dict__ for game in game_ids.values()]}")
-    print(f"casino status : players_waiting_ready = {waiting_for_ready_players}")
-    print(f"casino status : players_waiting_start = {waiting_for_start_players}")
-    print(f"casino statuses: players_searching = {players_in_searching}")
-    print(f"casino statuses: pvp = {players_in_searching}")
+    print(f"casino statuses: Casino.game_ids = {[game.__dict__ for game in Casino.game_ids.values()]}")
+    print(f"casino status : players_waiting_ready = {Casino.waiting_for_ready_players}")
+
+    print(f"casino statuses: players_searching = {Casino.players_in_searching}")
+    print(f"casino statuses: pvp = {Casino.pvp_dict}")
 
 
 class Casino:
-    def __init__(self, name):
 
+    waiting_for_ready_players = {}
+    game_ids = {}
+    players_in_searching = {}
+    pvp_dict = {}
+    def __init__(self, name):
         self.history_games = []
 
     @staticmethod
@@ -88,25 +120,26 @@ class Casino:
         return r.text, r.status_code
     @staticmethod
     def reset(match,sender):
-        waiting_for_start_players.remove(sender)
+        print(f"reset for {sender} {match} {'='*100}")
         random_g = match.games.copy().popitem()[1]
-        pvp_dict.pop(random_g.p1, None)
-        pvp_dict.pop(random_g.p2, None)
+        Casino.pvp_dict.pop(random_g.p1, None)
+        Casino.pvp_dict.pop(random_g.p2, None)
         temp = match.results.copy()
-        game_ids.pop(match.match_id)
+        Casino.game_ids.pop(match.match_id)
         del match
+        status = temp["status"]
+        League().add_player(random_g.p1)
+        League().add_player(random_g.p2)
+        # League().update_rate()
         return temp
 
     @staticmethod
     def process_game(sender,match: Match, metadata):
-        print(f"casino statuses: game_ids = {[game.__dict__ for game in game_ids.values()]}")
-        print(f"casino status : players_waiting_ready = {waiting_for_ready_players}")
-        print(f"casino status : players_waiting_start = {waiting_for_start_players}")
-        print(f"casino statuses: players_searching = {players_in_searching}")
-        print(f"casino statuses: pvp = {players_in_searching}")
+        print(f"casino statuses: Casino.game_ids = {[game.__dict__ for game in Casino.game_ids.values()]}")
+        print(f"casino status : players_waiting_ready = {Casino.waiting_for_ready_players}")
+        print(f"casino statuses: players_searching = {Casino.players_in_searching}")
+        print(f"casino statuses: pvp = {Casino.pvp_dict}")
         if match.results:
-
-
             temp = Casino.reset(match,sender)
             return flask.jsonify(temp), 200
 
@@ -188,18 +221,17 @@ def is_user_online(usr, game):
         return r.text, r.status_code
     else:
         if not r.json()["status"]:
-            game_ids.pop(game.match_id)
+            Casino.game_ids.pop(game.match_id)
             return "user_left", 200
 
 
 def kick_player(p):
     try:
-        if p in waiting_for_start_players:
-            waiting_for_start_players.remove(p)
-        if p in waiting_for_ready_players:
-            waiting_for_ready_players.remove(p)
-        if p in players_in_searching:
-            players_in_searching.pop(p)
+        print("$"*200)
+        if p in Casino.waiting_for_ready_players:
+            Casino.waiting_for_ready_players.pop(p,None)
+        if p in Casino.players_in_searching:
+            Casino.players_in_searching.pop(p)
     except Exception as e:
         print(e)
 
@@ -215,20 +247,23 @@ def start_game():
         return msg, code
     p2 = flask.request.json.get("p2", None)
     if not p2:
-        p2 = pvp_dict[user].p1 if pvp_dict[user].p1 != user else pvp_dict[user].p2
-    game = game_ids.get(pvp_dict[p2].hash())
-    if len(game.teams) == 2 and p2 in waiting_for_start_players and user in waiting_for_start_players:
+        pvp = Casino.pvp_dict.get(user,None)
+        if not pvp:
+            return "no pvp game ready", 400
+        p2 = pvp.p1 if pvp.p1 != user else pvp.p2
+    if user not in Casino.waiting_for_ready_players and not Casino.pvp_dict.get(user,None):
+        return "no games ready", 400
+    game = Casino.game_ids.get(Casino.pvp_dict[p2].hash())
+    if len(game.teams) == 2 and p2 not in Casino.waiting_for_ready_players and user not in Casino.waiting_for_ready_players:
         return Casino.process_game(user,game, metadata)
     status = is_user_online(p2, game)
     if status is not None:
         kick_player(p2)
         return status
-    if user not in waiting_for_ready_players:
-        if user not in waiting_for_start_players:
-            return "no games ready", 400
-    if user not in game.teams:
-        waiting_for_ready_players.remove(user)
-        waiting_for_start_players.add(user)
+
+    if user not in game.teams and user in Casino.waiting_for_ready_players:
+
+        Casino.waiting_for_ready_players.pop(user,None)
         game.teams[user] = team
 
     # game logic
@@ -236,9 +271,9 @@ def start_game():
 
 
 def get_two_players():
-    if len(players_in_searching) >= 2:
-        p1 = players_in_searching.popitem()[1]
-        p2 = players_in_searching.popitem()[1]
+    if len(Casino.players_in_searching) >= 2:
+        p1 = Casino.players_in_searching.popitem()[1]
+        p2 = Casino.players_in_searching.popitem()[1]
         return p1, p2
     return None
 
@@ -265,21 +300,41 @@ def get_game():
     msg, code = user_validation(game_obj.p1)
     if msg and code:
         return msg, code
-    pvp = pvp_dict.get(game_obj.p1, None)
+    pvp = Casino.pvp_dict.get(game_obj.p1, None)
     if pvp:
-        game_id = game_ids.get(pvp.hash(), None)
+        game_id = Casino.game_ids.get(pvp.hash(), None)
         if game_id:
-            game_id.games[game_obj.p1] = game_obj
-            waiting_for_ready_players.add(game_obj.p1)
-            game_obj.p2 = pvp.p1 if pvp.p1 != game_obj.p1 else pvp.p2
+            if game_obj.p1 not in Casino.waiting_for_ready_players:
+                game_id.games[game_obj.p1] = game_obj
+                Casino.waiting_for_ready_players[game_obj.p1] = game_obj.p1
+                game_obj.p2 = pvp.p1 if pvp.p1 != game_obj.p1 else pvp.p2
+                Casino.players_in_searching.pop(game_obj.p1,None)
             return flask.jsonify(game_id.as_json()), 200
-    if game_obj.p1 not in players_in_searching:
-        players_in_searching[game_obj.p1] = game_obj.p1
+    if game_obj.p1 not in Casino.players_in_searching:
+        Casino.players_in_searching[game_obj.p1] = game_obj.p1
     tracker()
     return "OK", 200
 
 
+@app.get("/external/game")
+def external_game():
+    game_id = flask.request.args.get("user_id",None)
+    if not game_id:
+        return "bad request",400
+    pvp = Casino.pvp_dict.get(game_id,None)
+    if pvp:
+        game = Casino.game_ids.get(pvp.hash(),None)
+        if game:
+            return flask.jsonify(game.__dict__), 200
+    return "not found", 404
+
+
+@app.get("/external/games")
+def external_games():
+    return flask.jsonify(Casino.game_ids), 200
+
+
+
 if __name__ == '__main__':
-    # threading.Thread(target=tracker, daemon=True).start()
     app.run(port=urls.service_casino_port, host=urls.host_url)
     service_run = False

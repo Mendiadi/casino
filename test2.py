@@ -96,7 +96,22 @@ def test():
     start_games_2 = start_games_all(players)
     assert_all(start_games_2, "Unauthorized", 401)
 
+import routes
+def stress():
+    users=[]
+    for i in range(55):
+
+        users.append(f"{i}_guest")
+    assert_all(login_all(users),"ok",200)
+    assert_all(get_games_all(users),("ok","{"),200)
+    assert_all(start_games_all(users),("ok","{"),200)
+
+    assert_all(log_out_all(users),"ok",200)
+
+
+
 if __name__ == '__main__':
+    # stress()
     # get_games_all(["1111","2222"])
     # start_games_all(["1111","2222"])
     # quit()
