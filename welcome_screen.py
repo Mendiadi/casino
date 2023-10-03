@@ -8,9 +8,10 @@ import routes
 
 
 class LoginScreen:
-    def __init__(self):
-        pygame.init()
+    def __init__(self,gui,adapter):
 
+        self.gui = gui
+        self.adapter = adapter
         # Constants
         self.WINDOW_SIZE = (400, 400)
         self.HEADLINE_TEXT = "Welcome"
@@ -65,34 +66,36 @@ class LoginScreen:
     def draw(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.running = False
-            if event.type == pygame.USEREVENT:
-                if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
-                    if event.ui_element == self.login_button:
-                        r = requests.post(
-                            f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_session_auth_port}/{routes.Routes.service_session_auth_login}",
-                            json={"user_id": self.user_id_entry.get_text()})
-                        print(r, r.text)
-                        if r:
-                            pygame.quit()
-                            threading.Thread(target=gui_.run, args=(self.user_id_entry.get_text(),)).start()
-                            self.running = False
-                            break
-                    elif event.ui_element == self.register_button:
-                        def register():
-                            r = requests.post(
-                                f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_session_auth_port}/{routes.Routes.service_session_auth_register}",
-                                json={"user_id": self.user_id_entry.get_text()})
-                            print(r, r.text)
-                            if r.ok:
-                                print("register success")
-                            else:
-                                print(r.text)
+                self.gui.running = False
+                return
+            if self.login_button.rect.collidepoint(pygame.mouse.get_pos()) \
+                and event.type == pygame.MOUSEBUTTONDOWN:
 
-                        threading.Thread(target=register, daemon=True, name="register").start()
+                r = requests.post(
+                    f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_session_auth_port}/{routes.Routes.service_session_auth_login}",
+                    json={"user_id": self.user_id_entry.get_text()})
+                print(r, r.text)
+                if r:
+                    self.adapter.user_id = self.user_id_entry.get_text()
+                    self.gui.current_screen = self.gui.get_lobby_screen()
+
+                    break
+
+            if self.register_button.rect.collidepoint(pygame.mouse.get_pos()) \
+                    and event.type == pygame.MOUSEBUTTONDOWN:
+                def register():
+                    r = requests.post(
+                        f"{routes.Routes.prefix}{routes.Routes.host_url}:{routes.Routes.service_session_auth_port}/{routes.Routes.service_session_auth_register}",
+                        json={"user_id": self.user_id_entry.get_text()})
+                    print(r, r.text)
+                    if r.ok:
+                        print("register success")
+                    else:
+                        print(r.text)
+
+                threading.Thread(target=register, daemon=True, name="register").start()
 
             self.gui_manager.process_events(event)
-
             # Check if the text entry is focused
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if self.user_id_entry.rect.collidepoint(event.pos):
@@ -124,12 +127,7 @@ class LoginScreen:
 
         self.clock.tick(60)
 
-    def mainloop(self):
-        while self.running:
-            self.draw()
 
-        # Quit Pygame
-        pygame.quit()
 
 
 # Instantiate and run the LoginScreen

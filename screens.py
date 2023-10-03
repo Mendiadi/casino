@@ -11,12 +11,12 @@ class CasinoLobby:
         y = random.randint(-200, -50)
         speed = random.randint(1, 3)
         return {"image": image, "rect": pygame.Rect(x, y, 100, 100), "speed": speed}
-    def __init__(self):
-        pygame.init()
+    def __init__(self,gui):
 
         # Define screen dimensions
         self.SCREEN_WIDTH = 800
         self.SCREEN_HEIGHT = 600
+        self.gui = gui
 
         # Create the Pygame screen
         self.screen = pygame.display.set_mode((self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
@@ -78,11 +78,13 @@ class CasinoLobby:
     def draw(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.running = False
+                self.gui.running = False
 
             # Process GUI events
             self.gui_manager.process_events(event)
-
+            if self.slot_machine_button.rect.collidepoint(pygame.mouse.get_pos())\
+                    and event.type == pygame.MOUSEBUTTONDOWN:
+                self.gui.current_screen = self.gui.get_game_screen()
         # Update animations
         for game_object in self.game_objects:
             game_object["rect"].move_ip(0, game_object["speed"])
@@ -106,15 +108,10 @@ class CasinoLobby:
         self.gui_manager.draw_ui(self.screen)
 
         pygame.display.flip()
-    def mainloop(self):
-        while self.running:
-            self.draw()
 
-        # Quit Pygame
-        pygame.quit()
 
 
 # Instantiate and run the CasinoLobby
 if __name__ == "__main__":
     casino_lobby = CasinoLobby()
-    casino_lobby.mainloop()
+
