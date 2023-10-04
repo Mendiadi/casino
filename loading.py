@@ -119,7 +119,10 @@ class SimulateSrceen():
 
             self.display_texts(self.displayed_texts)
             self.start_time = self.current_time
-        print(int(str(int(self.current_time))[len(str(int(self.current_time))):]))
+        try:
+            print(int(str(int(self.current_time))[len(str(int(self.current_time))):]))
+        except ValueError as e:
+            print(e)
         # if int(str(int(self.current_time))[len(str(int(self.current_time))):]) > self.total_duration:
         #     self.gui.current_screen = self.gui.get_lobby_screen()
         #     self.adapter = game_screen.Adapter(self.adapter.user_id)

@@ -70,6 +70,7 @@ def check_login():
         if r.ok:
             if r.json()["status"]:
                 return None
+        else:
             return "Unauthorized", 401
 
 

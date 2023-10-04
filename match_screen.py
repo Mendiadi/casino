@@ -131,28 +131,24 @@ class GameScreen:
 
     def draw(self):
         clock = pygame.time.Clock()
+        if self.adapter.match:
+            self.gui.current_screen = loading.SimulateSrceen(self.gui,self.adapter.match,self.adapter)
+            return
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.gui.running = False
-            if event.type == pygame.USEREVENT:
-                if event.user_type == pygame_gui.UI_BUTTON_PRESSED:
-                    if event.ui_element == self.player1_button:
-                        self.toggle_ready(self.player1_ready)
-                        if not self.adapter.is_waiting_for_start_game:
-                            print("adapter run")
-                            self.player2_button.set_text(f"waiting for {self.adapter.game[self.user]['p2']} ready")
-                            threading.Thread(target=self.adapter.start_game, daemon=True).start()
 
-
-                    elif event.ui_element == self.player2_button:
-                        self.toggle_ready(self.player2_ready)
-
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if self.player1_button.rect.collidepoint(pygame.mouse.get_pos()):
+                    self.toggle_ready(self.player1_ready)
+                    if not self.adapter.is_waiting_for_start_game:
+                        print("adapter run")
+                        self.player2_button.set_text(f"waiting for {self.adapter.game[self.user]['p2']} ready")
+                        threading.Thread(target=self.adapter.start_game, daemon=True).start()
+                elif self.player2_button.rect.collidepoint(pygame.mouse.get_pos()):
+                    self.toggle_ready(self.player2_ready)
             self.gui_manager.process_events(event)
-        if self.adapter.match:
-            self.gui.current_screen = loading.SimulateSrceen(self.gui,self.adapter.match,self.adapter)
-
-            return
-        self.gui_manager.update(clock.tick(60) / 1000.0)
+            self.gui_manager.update(clock.tick(60) / 1000.0)
         self.screen.fill((0, 0, 0))
 
         self.gui_manager.draw_ui(self.screen)

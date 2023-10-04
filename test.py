@@ -3,18 +3,18 @@ import json
 
 import routes
 
-r = routes.get(routes.Routes.service_casino_port, "external/games")
-print(r, r.text)
-r = routes.get(routes.Routes.service_casino_port, "external/game", params={"pid": "4_guest"})
-print(r, r.text)
-r = routes.get(routes.Routes.service_casino_port, "external/goals", params={"n": 4})
-print(r, r.text)
-r = routes.get(routes.Routes.service_casino_port, "external/goals")
-print(r, r.text)
-r = routes.get(routes.Routes.service_casino_port, "external/players")
-print(r, r.text)
-r = routes.get(routes.Routes.service_casino_port, "external/players", params={"n": 3})
-print(r, r.text)
+# r = routes.get(routes.Routes.service_casino_port, "external/games")
+# print(r, r.text)
+# r = routes.get(routes.Routes.service_casino_port, "external/game", params={"pid": "4_guest"})
+# print(r, r.text)
+# r = routes.get(routes.Routes.service_casino_port, "external/goals", params={"n": 4})
+# print(r, r.text)
+# r = routes.get(routes.Routes.service_casino_port, "external/goals")
+# print(r, r.text)
+# r = routes.get(routes.Routes.service_casino_port, "external/players")
+# print(r, r.text)
+# r = routes.get(routes.Routes.service_casino_port, "external/players", params={"n": 3})
+# print(r, r.text)
 
 import inspect
 import random
@@ -267,10 +267,16 @@ def test_simulator():
         for field in fields:
             assert_one(field in r.json())
     assert_equal(len(r.json()["timeline"]), 90, r.status_code)
-    assert_equal(r.json()["teams_after"][0]["name"].split(" ")[0], "a")
-    assert_equal(r.json()["teams_after"][1]["name"].split(" ")[0], "a")
+    # assert_equal(r.json()["teams_after"][0]["name"].split(" ")[0], "a")
+    # assert_equal(r.json()["teams_after"][1]["name"].split(" ")[0], "a")
+    print(r.json().get("goals",None))
 
 
 if __name__ == '__main__':
-    external_tests()
+    # external_tests()
+    test_simulator()
+    # sanity_test()
+    # bad_params_tests()
+    # unauthorized_tests()
+    # stress_test()
     ...

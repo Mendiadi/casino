@@ -1,7 +1,7 @@
 import requests
 class Routes:
     prefix = "http://"
-    host_url = "192.168.1.32"
+    host_url = "127.0.0.1"
     service_casino_port = 5050
     service_casino_game = "game"
     service_pay_deposit = "deposit"

@@ -1,16 +1,10 @@
-
-services_to_run = {
-    "payment":   {
-        "host":"127.0.0.1","port":5555
-    },"payment_db":   {
-        "host":"127.0.0.1","port":5556
-    },
-    "casino":{
-        "host":"127.0.0.1","port":5050
-    },"casino_db":{
-        "host":"127.0.0.1","port":5051
-    }
-}
-def main():
-    for service in services_to_run:
-        ...
+import random
+def shuffle():
+    l = list(range(100))
+    for i in range(100):
+        index = random.randint(0,99)
+        index_2 = random.randint(0,99)
+        while index == index_2:
+            index_2 = random.randint(0,99)
+        l[index],l[index_2] = l[index_2],l[index]
+    return l

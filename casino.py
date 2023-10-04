@@ -142,7 +142,7 @@ class Casino:
             League().update_rate(team, goals)
         Casino.pvp_dict.pop(random_g.p1, None)
         Casino.pvp_dict.pop(random_g.p2, None)
-        Casino.game_ids.pop(match.match_id)
+        Casino.game_ids.pop(match.match_id,None)
         del match
         return temp
 
