@@ -1,6 +1,8 @@
 import pygame
 import sys
 import time
+
+import game_screen
 import routes
 import requests
 
@@ -40,11 +42,11 @@ class SimulateSrceen():
         self.start_time = time.time()
         self.current_time = self.start_time
 
-        self.total_duration = 30  # in seconds
+        self.total_duration = 35  # in seconds
 
         # Initialize the display with the first 5 texts
         self.displayed_texts = self.text_list[:1]
-
+        self.simulate_done = False
         # Index for the next text
         self.next_text_index = 1
         # Function to draw text at left top
@@ -99,6 +101,7 @@ class SimulateSrceen():
 
     def draw(self):
     # Main loop
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.gui.running = False
@@ -116,6 +119,11 @@ class SimulateSrceen():
 
             self.display_texts(self.displayed_texts)
             self.start_time = self.current_time
+        print(int(str(int(self.current_time))[len(str(int(self.current_time))):]))
+        # if int(str(int(self.current_time))[len(str(int(self.current_time))):]) > self.total_duration:
+        #     self.gui.current_screen = self.gui.get_lobby_screen()
+        #     self.adapter = game_screen.Adapter(self.adapter.user_id)
+        #     return
         self.draw_texts(self.TEXT_COLOR)
         pygame.display.flip()
         self.current_time = time.time()

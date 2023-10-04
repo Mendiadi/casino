@@ -39,9 +39,9 @@ class CasinoLobby:
 
         # Load images for casino games
         self.slot_machine_image = pygame.image.load(
-            r"C:\Users\adim\PycharmProjects\gui_project\world\assets\money.png")  # Replace with your image
+            "money.png")  # Replace with your image
         self.roulette_table_image = pygame.image.load(
-            r"C:\Users\adim\PycharmProjects\gui_project\world\assets\money.png")  # Replace with your image
+            r"money.png")  # Replace with your image
 
         # Create buttons for casino games
         self.slot_machine_button = pygame_gui.elements.UIButton(
