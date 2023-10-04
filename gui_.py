@@ -285,7 +285,6 @@ def run(user_id):
                         threading.Thread(target=adapter.get_game, daemon=True).start()
                     Handler.current_screen_handler = draw_bonus_window
                     Handler.current_event_handler = bonus_window_events_handler
-
                     break
             if 350 <= event.pos[0] <= 450 and 500 <= event.pos[1] <= 530:
                 slider_dragging = True

@@ -183,15 +183,29 @@ class Casino:
         for bonus, val in metadata_bonus.items():
             if val:
                 won_cash += 50
+        def update_balances():
 
-        r = routes.put(urls.service_pay_port, urls.service_pay_withdraw, params={"user_id": lost_team, "cash":
-            lost_cash})
-        if not r.ok:
-            return r.text, r.status_code
-        r = routes.put(urls.service_pay_port, urls.service_pay_deposit, params={"user_id": won_team, "cash":
-            won_cash})
-        if not r.ok:
-            return r.text, r.status_code
+            for i in range(5):
+                results = []
+                r = routes.put(urls.service_pay_port, urls.service_pay_withdraw, params={"user_id": lost_team, "cash":
+                    lost_cash})
+                if not r.ok:
+                    results.append((r.text, r.status_code
+                                    ))
+                r = routes.put(urls.service_pay_port, urls.service_pay_deposit, params={"user_id": won_team, "cash":
+                    won_cash})
+                if not r.ok:
+                    results.append((r.text, r.status_code
+                                    ))
+                if results == []:
+                    return
+                else:
+                    print(results)
+            return results[-1]
+
+        text_code = update_balances()
+        if text_code:
+            return text_code[0],text_code[1]
 
         return flask.jsonify(match.results), 200
 

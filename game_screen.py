@@ -18,6 +18,10 @@ class Adapter:
         self.reset()
         self.user_id = user_id
         self.balance = "1000"
+        self.is_waiting_for_start_game = False
+        self.is_searching = False
+        self.game = None
+        self.match = None
     def reset(self):
         self.is_waiting_for_start_game = False
         self.is_searching = False
@@ -55,6 +59,8 @@ class Adapter:
                 self.game = r.json()
 
     def start_game(self):
+        if self.match:
+            return
         if not self.is_waiting_for_start_game:
             print("inside adapter")
             r = requests.post(
@@ -100,7 +106,7 @@ class GameScreen:
         self.loading_duration = 3.0  # Time in seconds for the loading animation
         self.loading_timer = None
         self.dot_effect = "..."
-
+        self.game_found = False
         self.create_elements()
 
     def create_elements(self):
@@ -161,6 +167,7 @@ class GameScreen:
             if self.adapter.game:
                 self.match_button.set_text(f"game found VS {self.adapter.game[self.user_id]['p2']}")
                 self.loading_timer = None
+                self.game_found = True
 
 
     def draw(self):
@@ -174,16 +181,21 @@ class GameScreen:
                     and event.type == pygame.MOUSEBUTTONDOWN:
 
                 self.start_loading_animation()
-                print("hey")
-                if not self.adapter.is_searching:
+
+                if not self.adapter.is_searching and not self.adapter.game:
                     threading.Thread(target=self.adapter.get_game, daemon=True).start()
+            if self.game_found or self.adapter.game:
+                print("moshe")
+                self.gui.current_screen = self.gui.get_match_screen()
 
-
+                return
+            print(self.game_found)
             self.manager.process_events(event)
 
         if self.loading_timer is not None:
             self.match_button.disable()
             self.update_loading_animation()
+
 
 
         self.manager.update(time_delta)

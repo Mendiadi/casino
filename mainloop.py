@@ -2,6 +2,7 @@ import pygame
 import requests
 
 import game_screen,screens,welcome_screen
+import match_screen
 import routes
 
 
@@ -15,7 +16,8 @@ class GUI:
 
     def get_welcome_screen(self):
         return welcome_screen.LoginScreen(self,self.adapter)
-
+    def get_match_screen(self):
+        return match_screen.GameScreen(self,self.adapter)
     def get_lobby_screen(self):
         return screens.CasinoLobby(self)
 
